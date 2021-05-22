@@ -1,0 +1,8 @@
+.chessboard {
+  width: 640px;
+  height: 640px;
+  margin: 20px;
+  border: 25px solid #333;
+  background-image: url("./chessboardimg.png");
+  background-size: contain;
+}
