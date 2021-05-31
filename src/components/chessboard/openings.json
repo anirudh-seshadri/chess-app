@@ -1,0 +1,10 @@
+[ {
+      "name": "Sicilian Defense",
+      "moves": "./sicilian.json"
+    },
+    {
+      "name": "King's Pawn Opening",
+      "moves": "./kingspawn.json"
+    }
+  ]
+  

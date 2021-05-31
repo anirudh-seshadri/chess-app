@@ -1,210 +1,225 @@
-
 import "./chessboard.css";
-const board = [
-    ["dr", "dn", "db", "dq", "dk", "db", "dn", "dr"],
-    ["dp", "dp", "dp", "dp", "dp", "dp", "dp", "dp"],
-    ["", "", "", "", "", "", "", ""],
-    ["", "", "", "", "", "", "", ""],
-    ["", "", "", "", "", "", "", ""],
-    ["", "", "", "", "", "", "", ""],
-    ["lp", "lp", "lp", "lp", "lp", "lp", "lp", "lp"],
-    ["lr", "ln", "lb", "lq", "lk", "lb", "ln", "lr"],
-];
+import moves from "./moves.json";
+import board from "./board.json";
+import pieces from "./pieces.json";
+import knightEightMovements from "./knightmovement.json";
 
-const pieces = {
-    "lp": "./chess_pics/Chess_plt60.png",
-    "dp": "./chess_pics/Chess_pdt60.png",
-    "lb": "./chess_pics/Chess_blt60.png",
-    "db": "./chess_pics/Chess_bdt60.png",
-    "ln": "./chess_pics/Chess_nlt60.png",
-    "dn": "./chess_pics/Chess_ndt60.png",
-    "lq": "./chess_pics/Chess_qlt60.png",
-    "dq": "./chess_pics/Chess_qdt60.png",
-    "lr": "./chess_pics/Chess_rlt60.png",
-    "dr": "./chess_pics/Chess_rdt60.png",
-    "lk": "./chess_pics/Chess_klt60.png",
-    "dk": "./chess_pics/Chess_kdt60.png",
-
-
-
-}
-function knightMove(notation, color){
-  const knightEightMovements = [
-    [2,1],
-    [1,2],
-    [-1,2],
-    [-2,1],
-    [-2,-1],
-    [-1,-2],
-    [1,-2],
-    [2,-1]
-  ];
-  const letterVal = getLetterValue(notation[1]);
-  const numVal = getNumberValue(notation[2]);
+function knightMove(notation, color) {
+  let letterVal = getLetterValue(notation[1]);
+  let numVal = getNumberValue(notation[2]);
+  let letterFromWhere = -1;
+  if (notation[notation.length - 3] === "x") {
+    if (notation.length !== 5) {
+      letterFromWhere = -1;
+    } else {
+      letterFromWhere = getLetterValue(notation[1]);
+    }
+    letterVal = getLetterValue(notation[notation.length - 2]);
+    numVal = getNumberValue(notation[notation.length - 1]);
+  } else if (notation.length === 4) {
+    letterFromWhere = getLetterValue(notation[1]); //1
+    letterVal = getLetterValue(notation[2]); //2
+    numVal = getNumberValue(notation[3]); //2
+  }
   for (let movement of knightEightMovements) {
     const startNumber = numVal + movement[0];
     const startLetter = letterVal + movement[1];
-    const knights = ["ln","dn"];
-      if(board[startNumber][startLetter] === knights[color]){
-        board[startNumber][startLetter] = "";
-        board[numVal][letterVal] = knights[color];
-        break;
-      }
+    if (
+      startNumber < 0 ||
+      startNumber > 7 ||
+      startLetter < 0 ||
+      startLetter > 7
+    ) {
+      continue;
+    }
+    if (startLetter !== letterFromWhere && letterFromWhere !== -1) {
+      continue;
+    }
+    const knights = ["ln", "dn"];
+    if (board[startNumber][startLetter] === knights[color]) {
+      console.log(startNumber, startLetter, numVal, letterVal);
+      board[startNumber][startLetter] = "";
+      board[numVal][letterVal] = knights[color];
+      break;
+    }
   }
 }
-function getNumberValue(numVal){
+function getNumberValue(numVal) {
   return 8 - parseInt(numVal, 10);
 }
-function getLetterValue(letterVal){
-  return letterVal.charCodeAt() - 'a'.charCodeAt();
+function getLetterValue(letterVal) {
+  return letterVal.charCodeAt() - "a".charCodeAt();
 }
-function isDarkPiece(piece){
-  if(piece!=="" && piece[0]==="d"){
+function isDarkPiece(piece) {
+  if (piece !== "" && piece[0] === "d") {
     return true;
   }
   return false;
 }
-function isLightPiece(piece){
-  console.log(piece);
-  if(piece!=="" && piece[0]==="l"){
+function isLightPiece(piece) {
+  if (piece !== "" && piece[0] === "l") {
     return true;
   }
   return false;
 }
-function findPawnPosition(targetNum,targetLetter,color){
+function findPawnPosition(targetNum, targetLetter, color) {
   let currentNum = 0;
-  if(color === 0){
-    if(targetNum===4){
-      if(board[targetNum+1][targetLetter]){
+  if (color === 0) {
+    if (targetNum === 4) {
+      if (board[targetNum + 1][targetLetter]) {
         currentNum = 5;
-      }else{
+      } else {
         currentNum = 6;
       }
-    }else{
-      if(board[targetNum+1][targetLetter]){
+    } else {
+      if (board[targetNum + 1][targetLetter]) {
         currentNum = targetNum + 1;
       }
     }
   } else {
-    if(targetNum===3){
-      if(board[targetNum-1][targetLetter]){
+    if (targetNum === 3) {
+      if (board[targetNum - 1][targetLetter]) {
         currentNum = 2;
-      }else{
+      } else {
         currentNum = 1;
       }
-    }else{
-      if(board[targetNum-1][targetLetter]){
-        currentNum = targetNum -1;
+    } else {
+      if (board[targetNum - 1][targetLetter]) {
+        currentNum = targetNum - 1;
       }
     }
   }
 
-  return(currentNum);
+  return currentNum;
 }
 
-function pawnCrossMove(notation, color){
-  const letterEndPos = notation[2];
-  const numberEndPos = notation[3];
-  const startLetterVal = notation[0].charCodeAt() - 'a'.charCodeAt() ;
-  const startNumberVal = parseInt(numberEndPos, 10) - 1;
-  const endLetterVal = letterEndPos.charCodeAt() - 'a'.charCodeAt();
-  const endNumbVal = parseInt(numberEndPos, 10) ;
-  if(color===0){
-    if(((startLetterVal-endLetterVal===1) || (startLetterVal-endLetterVal===-1)) && ((startNumberVal-endNumbVal===1)||(startNumberVal-endNumbVal===-1))){
-      if(board[startNumberVal][startLetterVal] !== "" && isDarkPiece(board[endNumbVal][endLetterVal])){
+function pawnCrossMove(notation, color) {
+  const endLetterVal = getLetterValue(notation[2]);
+  const endNumberVal = getNumberValue(notation[3]);
+  const startLetterVal = getLetterValue(notation[0]);
+  const startNumberVal = color === 1 ? endNumberVal - 1 : endNumberVal + 1;
+  if (color === 0) {
+    if (
+      (startLetterVal - endLetterVal === 1 ||
+        startLetterVal - endLetterVal === -1) &&
+      (startNumberVal - endNumberVal === 1 ||
+        startNumberVal - endNumberVal === -1)
+    ) {
+      if (
+        board[startNumberVal][startLetterVal] !== "" &&
+        isDarkPiece(board[endNumberVal][endLetterVal])
+      ) {
         board[startNumberVal][startLetterVal] = "";
-        board[endNumbVal][endLetterVal] = "lp";
+        board[endNumberVal][endLetterVal] = "lp";
       }
     }
-  }else{
-    if(((startLetterVal-endLetterVal===1) || (startLetterVal-endLetterVal===-1)) && ((startNumberVal-endNumbVal===1)||(startNumberVal-endNumbVal===-1))){
-      if(board[startNumberVal][startLetterVal] !== "" && isLightPiece(board[endNumbVal][endLetterVal])){
+  } else {
+    if (
+      (startLetterVal - endLetterVal === 1 ||
+        startLetterVal - endLetterVal === -1) &&
+      (startNumberVal - endNumberVal === 1 ||
+        startNumberVal - endNumberVal === -1)
+    ) {
+      if (
+        board[startNumberVal][startLetterVal] !== "" &&
+        isLightPiece(board[endNumberVal][endLetterVal])
+      ) {
         board[startNumberVal][startLetterVal] = "";
-        board[endNumbVal][endLetterVal] = "dp";
+        board[endNumberVal][endLetterVal] = "dp";
       }
     }
   }
 }
-function isEligiblePawn(color, targetNumber,beforeNumber,letterVal){
-  if(board[targetNumber][letterVal]!==""){
+function isEligiblePawn(color, targetNumber, beforeNumber, letterVal) {
+  if (board[targetNumber][letterVal] !== "") {
     return false;
   }
-  if(color===0){
-    if(board[beforeNumber][letterVal]!=="lp"){
+  if (color === 0) {
+    if (board[beforeNumber][letterVal] !== "lp") {
       return false;
     }
-  }else{
-    if(board[beforeNumber][letterVal]!=="dp"){
+  } else {
+    if (board[beforeNumber][letterVal] !== "dp") {
       return false;
     }
   }
   return true;
 }
-function pawnMove(notation,color){
+function pawnMove(notation, color) {
   const letterVal = getLetterValue(notation[0]);
   const numVal = getNumberValue(notation[1]);
-  const currentNum = findPawnPosition(numVal,letterVal,color);
-  if(!isEligiblePawn(color,numVal,currentNum,letterVal)){
+  const currentNum = findPawnPosition(numVal, letterVal, color);
+  if (!isEligiblePawn(color, numVal, currentNum, letterVal)) {
     return;
   }
-  if (color === 0){
+  if (color === 0) {
     board[numVal][letterVal] = "lp";
-  }else{
-      board[numVal][letterVal] = "dp";
+  } else {
+    board[numVal][letterVal] = "dp";
   }
   board[currentNum][letterVal] = "";
 }
 
-function Move (notation,color){
-  if(notation.indexOf("x")!==-1){
+function Move(notation, color) {
+  if (notation.indexOf("x") !== -1) {
     const first = notation[0];
-    if('a'.charCodeAt()<=first.charCodeAt() && first.charCodeAt()<='h'.charCodeAt()){
-      pawnCrossMove(notation,color);
+    if (first === "N") {
+      knightMove(notation, color);
     }
-
-  }
-  else if(notation.length===2){
-    pawnMove(notation,color);
-  }else{
-    knightMove(notation,color);
+    if (
+      "a".charCodeAt() <= first.charCodeAt() &&
+      first.charCodeAt() <= "h".charCodeAt()
+    ) {
+      pawnCrossMove(notation, color);
+    }
+  } else if (notation.length === 2) {
+    pawnMove(notation, color);
+  } else {
+    knightMove(notation, color);
   }
 }
 
-function Chessboard() {
-  const items = [];
-  let keyValue = 0;
-    for(let row of board){
-      let emptyColCount = 0;
-        for(let column of row){
-          if(column!==""){
-            items.push(<img key={keyValue++} style = {{padding: 10, height: 60}} alt={pieces[column]} src = {pieces[column]}></img>)
-          }else{
-            emptyColCount++;
-            items.push(<span key={keyValue++} style = {{padding: "0 40px"}}></span>)
-          }
-        }
-        if(emptyColCount===8){
-          items.push(<div key={keyValue++} style = {{padding: 30}}></div>);
-        }else{
-          items.push(<div key={keyValue++}></div>);
-        }
+function renderColumn(column, keyValue) {
+  const isEmpty = column !== "";
+  return (
+    <span key={keyValue}>
+      {isEmpty && (
+        <img
+          style={{ width: "12.5%" }}
+          alt={pieces[column]}
+          src={pieces[column]}
+        ></img>
+      )}
+      {!isEmpty && (
+        <span style={{ width: "12.5%", display: "inline-block" }}></span>
+      )}
+    </span>
+  );
+}
 
-    }
-    Move("e4",0);
-    Move("e5",1);
-    Move("d3",0);   
-    Move("d6",1);   
-    Move("Nf3",0);   
-    Move("Nf6",1);
-    Move("Ng5",0);   
-    Move("h6",1);
-    Move("Nc3",0);
-    Move("hxg5",1);
-    return (
-      <div className = "chessboard">
-        {items}
-      </div>
-    );
-  }
+function renderRow(row, rowIndex) {
+  let keyValue = (rowIndex + 1) * 8;
+  return (
+    <div key={rowIndex} style={{ height: "12.5%" }}>
+      {row.map((column) => {
+        return renderColumn(column, keyValue++);
+      })}
+    </div>
+  );
+}
+for (let move of moves) {
+  Move(move[0], 0);
+  Move(move[1], 1);
+}
+
+function Chessboard() {
+  return (
+    <div className="chessboard">
+      {board.map((row, index) => {
+        return renderRow(row, index);
+      })}
+    </div>
+  );
+}
 
 export default Chessboard;

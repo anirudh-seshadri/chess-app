@@ -1,0 +1,14 @@
+{
+    "lp": "./chess_pics/Chess_plt60.png",
+    "dp": "./chess_pics/Chess_pdt60.png",
+    "lb": "./chess_pics/Chess_blt60.png",
+    "db": "./chess_pics/Chess_bdt60.png",
+    "ln": "./chess_pics/Chess_nlt60.png",
+    "dn": "./chess_pics/Chess_ndt60.png",
+    "lq": "./chess_pics/Chess_qlt60.png",
+    "dq": "./chess_pics/Chess_qdt60.png",
+    "lr": "./chess_pics/Chess_rlt60.png",
+    "dr": "./chess_pics/Chess_rdt60.png",
+    "lk": "./chess_pics/Chess_klt60.png",
+    "dk": "./chess_pics/Chess_kdt60.png"
+  }
