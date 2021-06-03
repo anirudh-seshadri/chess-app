@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Josefin+Sans:wght@300&display=swap");
 .chessboard {
   width: 640px;
   height: 640px;
@@ -5,4 +6,17 @@
   border: 25px solid #333;
   background-image: url("./chessboardimg.png");
   background-size: contain;
+}
+table {
+  counter-reset: tableCount;
+}
+.count:before {
+  content: counter(tableCount);
+  counter-increment: tableCount;
+}
+.l {
+  font-family: "Josefin Sans", sans-serif;
+  height: 158px;
+  border-style: solid;
+  border-color: black;
 }

@@ -1,9 +1,11 @@
 import "./chessboard.css";
+import { Container, Row, Col, Nav, Table, tr, td } from "react-bootstrap";
 import moves from "./moves.json";
 import board from "./board.json";
 import pieces from "./pieces.json";
 import knightEightMovements from "./knightmovement.json";
 
+function bishopMove(notation, color) {}
 function knightMove(notation, color) {
   let letterVal = getLetterValue(notation[1]);
   let numVal = getNumberValue(notation[2]);
@@ -214,11 +216,89 @@ for (let move of moves) {
 
 function Chessboard() {
   return (
-    <div className="chessboard">
-      {board.map((row, index) => {
-        return renderRow(row, index);
-      })}
-    </div>
+    <Container>
+      <Row>
+        <Col md={2} className="my-4">
+          <div className="wrapper">
+            <Nav
+              defaultActiveKey="/home"
+              className="sidebar flex-column bg-light"
+            >
+              <Nav.Link className="l home" href="/home">
+                <p
+                  style={{
+                    textAlign: "center",
+                    color: "black",
+                    fontWeight: "bold",
+                    fontSize: 30,
+                  }}
+                >
+                  Home
+                </p>
+              </Nav.Link>
+              <Nav.Link className="l play" eventKey="link-1">
+                <p
+                  style={{
+                    textAlign: "center",
+                    color: "black",
+                    fontWeight: "bold",
+                    fontSize: 30,
+                  }}
+                >
+                  Play
+                </p>
+              </Nav.Link>
+              <Nav.Link className="l puzzles" eventKey="link-2">
+                <p
+                  style={{
+                    textAlign: "center",
+                    color: "black",
+                    fontWeight: "bold",
+                    fontSize: 30,
+                  }}
+                >
+                  Puzzles
+                </p>
+              </Nav.Link>
+              <Nav.Link className="l learn" eventKey="disabled">
+                <p
+                  style={{
+                    textAlign: "center",
+                    color: "black",
+                    fontWeight: "bold",
+                    fontSize: 30,
+                  }}
+                >
+                  Learn
+                </p>
+              </Nav.Link>
+            </Nav>
+          </div>
+        </Col>
+        <Col md={6}>
+          <div className="chessboard">
+            {board.map((row, index) => {
+              return renderRow(row, index);
+            })}
+          </div>
+        </Col>
+        <Col md={1} className="mx-4">
+          <Table striped bordered hover className="my-4">
+            {moves.map((move) => {
+              return (
+                <tbody>
+                  <tr>
+                    <td className="count">.</td>
+                    <td>{move[0]}</td>
+                    <td> {move[1]}</td>
+                  </tr>
+                </tbody>
+              );
+            })}
+          </Table>
+        </Col>
+      </Row>
+    </Container>
   );
 }
 
