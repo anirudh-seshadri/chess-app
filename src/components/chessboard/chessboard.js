@@ -4,8 +4,175 @@ import moves from "./moves.json";
 import board from "./board.json";
 import pieces from "./pieces.json";
 import knightEightMovements from "./knightmovement.json";
+let didKingMove = [false, false];
+const castleMoves = [
+  {
+    notation: "O-O",
+    color: 0,
+    kingStartPosition: { number: 7, letter: 4 },
+    rookStartPosition: { number: 7, letter: 7 },
+    kingEndPosition: { number: 7, letter: 6 },
+    rookEndPosition: { number: 7, letter: 5 },
+  },
+  {
+    notation: "O-O",
+    color: 1,
+    kingStartPosition: { number: 0, letter: 4 },
+    rookStartPosition: { number: 0, letter: 7 },
+    kingEndPosition: { number: 0, letter: 6 },
+    rookEndPosition: { number: 0, letter: 5 },
+  },
+  {
+    notation: "O-O-O",
+    color: 0,
+    kingStartPosition: { number: 7, letter: 4 },
+    rookStartPosition: { number: 7, letter: 0 },
+    kingEndPosition: { number: 7, letter: 2 },
+    rookEndPosition: { number: 7, letter: 3 },
+  },
+  {
+    notation: "O-O-O",
+    color: 1,
+    kingStartPosition: { number: 0, letter: 4 },
+    rookStartPosition: { number: 0, letter: 0 },
+    kingEndPosition: { number: 0, letter: 2 },
+    rookEndPosition: { number: 0, letter: 3 },
+  },
+];
+function castleMove(notation, color) {
+  if (didKingMove[color]) {
+    return;
+  }
+  for (let castleMove of castleMoves) {
+    if (castleMove.notation === notation && castleMove.color === color) {
+      for (
+        let i = 0;
+        i <
+        Math.abs(
+          castleMove.kingStartPosition.letter -
+            castleMove.rookStartPosition.letter
+        );
+        i++
+      ) {
+        if (
+          board[castleMove.kingEndPosition.number][
+            castleMove.kingEndPosition.letter
+          ] === "" &&
+          board[castleMove.rookEndPosition.number][
+            castleMove.rookEndPosition.letter
+          ] === ""
+        ) {
+          board[castleMove.kingEndPosition.number][
+            castleMove.kingEndPosition.letter
+          ] =
+            board[castleMove.kingStartPosition.number][
+              castleMove.kingStartPosition.letter
+            ];
+          board[castleMove.kingStartPosition.number][
+            castleMove.kingStartPosition.letter
+          ] = "";
+          board[castleMove.rookEndPosition.number][
+            castleMove.rookEndPosition.letter
+          ] =
+            board[castleMove.rookStartPosition.number][
+              castleMove.rookStartPosition.letter
+            ];
+          board[castleMove.rookStartPosition.number][
+            castleMove.rookStartPosition.letter
+          ] = "";
+        }
+      }
+    }
+  }
+}
+function kingMove(notation, color) {
+  const kings = ["lk", "dk"];
+  let letterVal = getLetterValue(notation[1]);
+  let numVal = getNumberValue(notation[2]);
+  if (notation[notation.length - 3] === "x") {
+    letterVal = getLetterValue(notation[notation.length - 2]);
+    numVal = getNumberValue(notation[notation.length - 1]);
+  }
+  let kingEightMovements = [
+    [0, 1],
+    [1, 1],
+    [1, 0],
+    [1, -1],
+    [0, -1],
+    [-1, 1],
+    [-1, 0],
+    [-1, 1],
+  ];
+  for (let movement of kingEightMovements) {
+    const startNumber = numVal + movement[0];
+    const startLetter = letterVal + movement[1];
+    if (
+      startNumber < 0 ||
+      startNumber > 7 ||
+      startLetter < 0 ||
+      startLetter > 7
+    ) {
+      continue;
+    }
+    if (board[startNumber][startLetter] === kings[color]) {
+      didKingMove[color] = true;
+      board[startNumber][startLetter] = "";
+      board[numVal][letterVal] = kings[color];
+      break;
+    }
+  }
+}
+function pieceMove(notation, color, fourMovements, piece) {
+  let letterVal = getLetterValue(notation[1]);
+  let numVal = getNumberValue(notation[2]);
+  let letterFromWhere = -1;
+  if (notation[notation.length - 3] === "x") {
+    if (notation.length !== 5) {
+      letterFromWhere = -1;
+    } else {
+      letterFromWhere = getLetterValue(notation[1]);
+    }
+    letterVal = getLetterValue(notation[notation.length - 2]);
+    numVal = getNumberValue(notation[notation.length - 1]);
+  } else if (notation.length === 4) {
+    if (board[numVal][letterVal] !== "") {
+      return;
+    }
+    letterFromWhere = getLetterValue(notation[1]);
+    letterVal = getLetterValue(notation[2]);
+    numVal = getNumberValue(notation[3]);
+  } else if (board[numVal][letterVal] !== "") {
+    return;
+  }
 
-function bishopMove(notation, color) {}
+  for (let movement of fourMovements) {
+    let startNumVal = numVal;
+    let startLetterVal = letterVal;
+    while (true) {
+      startNumVal += movement[0];
+      startLetterVal += movement[1];
+
+      if (
+        startNumVal > 7 ||
+        startLetterVal > 7 ||
+        startNumVal < 0 ||
+        startLetterVal < 0
+      ) {
+        break;
+      }
+      if (startLetterVal !== letterFromWhere && letterFromWhere !== -1) {
+        continue;
+      }
+      if (board[startNumVal][startLetterVal] === piece[color]) {
+        board[startNumVal][startLetterVal] = "";
+        board[numVal][letterVal] = piece[color];
+      }
+      if (board[startNumVal][startLetterVal] !== "") {
+        break;
+      }
+    }
+  }
+}
 function knightMove(notation, color) {
   let letterVal = getLetterValue(notation[1]);
   let numVal = getNumberValue(notation[2]);
@@ -19,9 +186,9 @@ function knightMove(notation, color) {
     letterVal = getLetterValue(notation[notation.length - 2]);
     numVal = getNumberValue(notation[notation.length - 1]);
   } else if (notation.length === 4) {
-    letterFromWhere = getLetterValue(notation[1]); //1
-    letterVal = getLetterValue(notation[2]); //2
-    numVal = getNumberValue(notation[3]); //2
+    letterFromWhere = getLetterValue(notation[1]);
+    letterVal = getLetterValue(notation[2]);
+    numVal = getNumberValue(notation[3]);
   }
   for (let movement of knightEightMovements) {
     const startNumber = numVal + movement[0];
@@ -39,7 +206,6 @@ function knightMove(notation, color) {
     }
     const knights = ["ln", "dn"];
     if (board[startNumber][startLetter] === knights[color]) {
-      console.log(startNumber, startLetter, numVal, letterVal);
       board[startNumber][startLetter] = "";
       board[numVal][letterVal] = knights[color];
       break;
@@ -167,6 +333,55 @@ function Move(notation, color) {
     const first = notation[0];
     if (first === "N") {
       knightMove(notation, color);
+    } else if (first === "B") {
+      pieceMove(
+        notation,
+        color,
+        [
+          [-1, 1],
+          [1, 1],
+          [-1, -1],
+          [1, -1],
+        ],
+        ["lb", "db"]
+      );
+    } else if (first === "R") {
+      pieceMove(
+        notation,
+        color,
+        [
+          [0, 1],
+          [0, -1],
+          [1, 0],
+          [-1, 0],
+        ],
+        ["lr", "dr"]
+      );
+    } else if (first === "Q") {
+      pieceMove(
+        notation,
+        color,
+        [
+          [-1, 1],
+          [1, 1],
+          [-1, -1],
+          [1, -1],
+        ],
+        ["lq", "dq"]
+      );
+      pieceMove(
+        notation,
+        color,
+        [
+          [0, 1],
+          [0, -1],
+          [1, 0],
+          [-1, 0],
+        ],
+        ["lq", "dq"]
+      );
+    } else if (first === "K") {
+      kingMove(notation, color);
     }
     if (
       "a".charCodeAt() <= first.charCodeAt() &&
@@ -176,8 +391,63 @@ function Move(notation, color) {
     }
   } else if (notation.length === 2) {
     pawnMove(notation, color);
-  } else {
+  } else if (
+    notation[0] === "N" &&
+    (notation.length === 3 || notation.length === 4)
+  ) {
     knightMove(notation, color);
+  } else if (notation[0] === "K") {
+    kingMove(notation, color);
+  } else {
+    if (notation[0] === "B") {
+      pieceMove(
+        notation,
+        color,
+        [
+          [-1, 1],
+          [1, 1],
+          [-1, -1],
+          [1, -1],
+        ],
+        ["lb", "db"]
+      );
+    } else if (notation[0] === "R") {
+      pieceMove(
+        notation,
+        color,
+        [
+          [0, 1],
+          [0, -1],
+          [1, 0],
+          [-1, 0],
+        ],
+        ["lr", "dr"]
+      );
+    } else if (notation[0] === "Q") {
+      pieceMove(
+        notation,
+        color,
+        [
+          [-1, 1],
+          [1, 1],
+          [-1, -1],
+          [1, -1],
+        ],
+        ["lq", "dq"]
+      );
+      pieceMove(
+        notation,
+        color,
+        [
+          [0, 1],
+          [0, -1],
+          [1, 0],
+          [-1, 0],
+        ],
+        ["lq", "dq"]
+      );
+    }
+    castleMove(notation, color);
   }
 }
 
@@ -282,19 +552,21 @@ function Chessboard() {
             })}
           </div>
         </Col>
-        <Col md={1} className="mx-4">
+        <Col md={2} className="mx-4">
           <Table striped bordered hover className="my-4">
-            {moves.map((move) => {
-              return (
-                <tbody>
-                  <tr>
-                    <td className="count">.</td>
-                    <td>{move[0]}</td>
-                    <td> {move[1]}</td>
+            <tbody>
+              {moves.map((move, index) => {
+                return (
+                  <tr key={index}>
+                    <td key={0} className="count">
+                      .
+                    </td>
+                    <td key={1}>{move[0]}</td>
+                    <td key={2}> {move[1]}</td>
                   </tr>
-                </tbody>
-              );
-            })}
+                );
+              })}
+            </tbody>
           </Table>
         </Col>
       </Row>
