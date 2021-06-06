@@ -4,46 +4,17 @@ import moves from "./moves.json";
 import board from "./board.json";
 import pieces from "./pieces.json";
 import knightEightMovements from "./knightmovement.json";
+import kingEightMovements from "./kingmovements.json";
+import bishopMove from "./bishopmovements.json";
+import rookMove from "./rookmovements.json";
+import castleMovements from "./castlemovements.json";
+
 let didKingMove = [false, false];
-const castleMoves = [
-  {
-    notation: "O-O",
-    color: 0,
-    kingStartPosition: { number: 7, letter: 4 },
-    rookStartPosition: { number: 7, letter: 7 },
-    kingEndPosition: { number: 7, letter: 6 },
-    rookEndPosition: { number: 7, letter: 5 },
-  },
-  {
-    notation: "O-O",
-    color: 1,
-    kingStartPosition: { number: 0, letter: 4 },
-    rookStartPosition: { number: 0, letter: 7 },
-    kingEndPosition: { number: 0, letter: 6 },
-    rookEndPosition: { number: 0, letter: 5 },
-  },
-  {
-    notation: "O-O-O",
-    color: 0,
-    kingStartPosition: { number: 7, letter: 4 },
-    rookStartPosition: { number: 7, letter: 0 },
-    kingEndPosition: { number: 7, letter: 2 },
-    rookEndPosition: { number: 7, letter: 3 },
-  },
-  {
-    notation: "O-O-O",
-    color: 1,
-    kingStartPosition: { number: 0, letter: 4 },
-    rookStartPosition: { number: 0, letter: 0 },
-    kingEndPosition: { number: 0, letter: 2 },
-    rookEndPosition: { number: 0, letter: 3 },
-  },
-];
 function castleMove(notation, color) {
   if (didKingMove[color]) {
     return;
   }
-  for (let castleMove of castleMoves) {
+  for (let castleMove of castleMovements) {
     if (castleMove.notation === notation && castleMove.color === color) {
       for (
         let i = 0;
@@ -93,16 +64,6 @@ function kingMove(notation, color) {
     letterVal = getLetterValue(notation[notation.length - 2]);
     numVal = getNumberValue(notation[notation.length - 1]);
   }
-  let kingEightMovements = [
-    [0, 1],
-    [1, 1],
-    [1, 0],
-    [1, -1],
-    [0, -1],
-    [-1, 1],
-    [-1, 0],
-    [-1, 1],
-  ];
   for (let movement of kingEightMovements) {
     const startNumber = numVal + movement[0];
     const startLetter = letterVal + movement[1];
@@ -334,52 +295,12 @@ function Move(notation, color) {
     if (first === "N") {
       knightMove(notation, color);
     } else if (first === "B") {
-      pieceMove(
-        notation,
-        color,
-        [
-          [-1, 1],
-          [1, 1],
-          [-1, -1],
-          [1, -1],
-        ],
-        ["lb", "db"]
-      );
+      pieceMove(notation, color, bishopMove, ["lb", "db"]);
     } else if (first === "R") {
-      pieceMove(
-        notation,
-        color,
-        [
-          [0, 1],
-          [0, -1],
-          [1, 0],
-          [-1, 0],
-        ],
-        ["lr", "dr"]
-      );
+      pieceMove(notation, color, rookMove, ["lr", "dr"]);
     } else if (first === "Q") {
-      pieceMove(
-        notation,
-        color,
-        [
-          [-1, 1],
-          [1, 1],
-          [-1, -1],
-          [1, -1],
-        ],
-        ["lq", "dq"]
-      );
-      pieceMove(
-        notation,
-        color,
-        [
-          [0, 1],
-          [0, -1],
-          [1, 0],
-          [-1, 0],
-        ],
-        ["lq", "dq"]
-      );
+      pieceMove(notation, color, bishopMove, ["lq", "dq"]);
+      pieceMove(notation, color, rookMove, ["lq", "dq"]);
     } else if (first === "K") {
       kingMove(notation, color);
     }
@@ -400,52 +321,12 @@ function Move(notation, color) {
     kingMove(notation, color);
   } else {
     if (notation[0] === "B") {
-      pieceMove(
-        notation,
-        color,
-        [
-          [-1, 1],
-          [1, 1],
-          [-1, -1],
-          [1, -1],
-        ],
-        ["lb", "db"]
-      );
+      pieceMove(notation, color, bishopMove, ["lb", "db"]);
     } else if (notation[0] === "R") {
-      pieceMove(
-        notation,
-        color,
-        [
-          [0, 1],
-          [0, -1],
-          [1, 0],
-          [-1, 0],
-        ],
-        ["lr", "dr"]
-      );
+      pieceMove(notation, color, rookMove, ["lr", "dr"]);
     } else if (notation[0] === "Q") {
-      pieceMove(
-        notation,
-        color,
-        [
-          [-1, 1],
-          [1, 1],
-          [-1, -1],
-          [1, -1],
-        ],
-        ["lq", "dq"]
-      );
-      pieceMove(
-        notation,
-        color,
-        [
-          [0, 1],
-          [0, -1],
-          [1, 0],
-          [-1, 0],
-        ],
-        ["lq", "dq"]
-      );
+      pieceMove(notation, color, bishopMove, ["lq", "dq"]);
+      pieceMove(notation, color, rookMove, ["lq", "dq"]);
     }
     castleMove(notation, color);
   }

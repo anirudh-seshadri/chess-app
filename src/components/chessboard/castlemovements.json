@@ -1,0 +1,34 @@
+[
+    {
+      "notation": "O-O",
+      "color": 0,
+      "kingStartPosition": { "number": 7, "letter": 4 },
+      "rookStartPosition": { "number": 7, "letter": 7 },
+      "kingEndPosition": { "number": 7, "letter": 6 },
+      "rookEndPosition": { "number": 7, "letter": 5 }
+    },
+    {
+      "notation": "O-O",
+      "color": 1,
+      "kingStartPosition": { "number": 0, "letter": 4 },
+      "rookStartPosition": { "number": 0, "letter": 7 },
+      "kingEndPosition": { "number": 0, "letter": 6 },
+      "rookEndPosition": { "number": 0, "letter": 5 }
+    },
+    {
+      "notation": "O-O-O",
+      "color": 0,
+      "kingStartPosition": { "number": 7, "letter": 4 },
+      "rookStartPosition": { "number": 7, "letter": 0 },
+      "kingEndPosition": { "number": 7, "letter": 2 },
+      "rookEndPosition": { "number": 7, "letter": 3 }
+    },
+    {
+      "notation": "O-O-O",
+      "color": 1,
+      "kingStartPosition": { "number": 0, "letter": 4 },
+      "rookStartPosition": { "number": 0, "letter": 0 },
+      "kingEndPosition": { "number": 0, "letter": 2 },
+      "rookEndPosition": { "number": 0, "letter": 3 }
+    }
+  ]
