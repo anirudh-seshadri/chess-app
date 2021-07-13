@@ -1,0 +1,4 @@
+Iterate through the openings array
+Find the parent element of the current element
+Add a reference to the child in the parent element’s object
+If there is no parent for an element, that will be the tree’s “root” element

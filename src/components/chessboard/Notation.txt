@@ -1,0 +1,32 @@
+notation: 
+--> startstring, endstring, cross, startpiece, endpiece, color
+c4
+cxd4
+cxd4 e.p.
+N,B,R,Q,c4
+N,B,R,Q,xc4
+N,B,R,Q,bc4
+N,B,R,Q,bxc4
+N,B,R,Q,1c4
+N,B,R,Q,1xc4
+N,B,R,Q,b1c4
+N,B,R,Q,b1xc4
+if(notation[0]==="N" || notation[0]==="B" || notation[0]==="R" || notation[0]==="Q")
+
+<Piece><StartString><Cross><EndString>
+
+Nb1xc3
+Piece - N
+StartString - b1
+Cross - x (true)
+EndString - c3
+
+e4
+
+Nf3
+Piece - N
+StartString - empty 
+Cross -  (true)
+EndString - c3
+
+get opponent king position

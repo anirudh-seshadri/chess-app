@@ -1,5 +1,5 @@
 import "./App.css";
-import ChessBoard from "./components/chessboard/chessboard";
+import ChessBoard from "./components/chessboard/chessboardview";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 function App() {

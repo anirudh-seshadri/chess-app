@@ -1,458 +1,734 @@
-import "./chessboard.css";
-import { Container, Row, Col, Nav, Table, tr, td } from "react-bootstrap";
-import moves from "./moves.json";
-import board from "./board.json";
-import pieces from "./pieces.json";
-import knightEightMovements from "./knightmovement.json";
-import kingEightMovements from "./kingmovements.json";
+import ChessMove from "./chessmove";
+import constants from "./constants";
+import knightMove from "./knightmovement.json";
+import kingMove from "./kingmovements.json";
 import bishopMove from "./bishopmovements.json";
 import rookMove from "./rookmovements.json";
+import queenMove from "./queenmovemements.json";
 import castleMovements from "./castlemovements.json";
+import pawnWhiteMove from "./pawnwhitemovements.json";
+import pawnBlackMove from "./pawnblackmovements.json";
 
 let didKingMove = [false, false];
-function castleMove(notation, color) {
-  if (didKingMove[color]) {
-    return;
+export default class ChessBoard {
+  constructor(board) {
+    this.board = board;
   }
-  for (let castleMove of castleMovements) {
-    if (castleMove.notation === notation && castleMove.color === color) {
-      for (
-        let i = 0;
-        i <
-        Math.abs(
-          castleMove.kingStartPosition.letter -
-            castleMove.rookStartPosition.letter
-        );
-        i++
-      ) {
-        if (
-          board[castleMove.kingEndPosition.number][
-            castleMove.kingEndPosition.letter
-          ] === "" &&
-          board[castleMove.rookEndPosition.number][
-            castleMove.rookEndPosition.letter
-          ] === ""
-        ) {
-          board[castleMove.kingEndPosition.number][
-            castleMove.kingEndPosition.letter
-          ] =
-            board[castleMove.kingStartPosition.number][
-              castleMove.kingStartPosition.letter
-            ];
-          board[castleMove.kingStartPosition.number][
-            castleMove.kingStartPosition.letter
-          ] = "";
-          board[castleMove.rookEndPosition.number][
-            castleMove.rookEndPosition.letter
-          ] =
-            board[castleMove.rookStartPosition.number][
-              castleMove.rookStartPosition.letter
-            ];
-          board[castleMove.rookStartPosition.number][
-            castleMove.rookStartPosition.letter
-          ] = "";
+  parseNotation(notation, color) {
+    const move = new ChessMove();
+    move.color = color;
+    if (notation === "O-O" || notation === "O-O-O") {
+      if (notation === "O-O") {
+        move.castle = 1;
+      } else if (notation === "O-O-O") {
+        move.castle = 2;
+      }
+      return move;
+    }
+    let endString;
+    let startString;
+    const notationSplit = notation.split("x");
+    if (notationSplit.length === 2) {
+      move.cross = true;
+      endString = notationSplit[1];
+      startString = notationSplit[0];
+    } else {
+      endString = notation.substring(notation.length - 2);
+      startString = notation.substring(0, notation.length - 2);
+    }
+    const first = startString[0];
+    if (
+      first === constants.KNIGHT ||
+      first === constants.BISHOP ||
+      first === constants.ROOK ||
+      first === constants.QUEEN ||
+      first === constants.KING
+    ) {
+      move.startpiece = first;
+      startString = startString.substring(1);
+    } else if (
+      typeof first === "undefined" ||
+      first === "a" ||
+      first === "b" ||
+      first === "c" ||
+      first === "d" ||
+      first === "e" ||
+      first === "f" ||
+      first === "g" ||
+      first === "h"
+    ) {
+      move.startpiece = constants.PAWN;
+      if (move.cross === true) {
+        move.startLetterVal = this.getLetterValue(startString[0]);
+      }
+    } else {
+      return false;
+    }
+    move.endLetterVal = this.getLetterValue(endString[0]);
+    move.endNumVal = this.getNumberValue(endString[1]);
+    this.findStartPosition(move, startString);
+    return move;
+  }
+  getColor(move) {
+    let endPiece = this.board[move.endNumVal][move.endLetterVal];
+    return endPiece[0];
+  }
+  isValidMove(move) {
+    if (move.castle !== 0) {
+      if (!this.isValidCastleMove(move)) {
+        return false;
+      } else {
+        return true;
+      }
+    }
+    if (
+      isNaN(move.endLetterVal) ||
+      isNaN(move.endNumVal) ||
+      isNaN(move.startLetterVal) ||
+      isNaN(move.startNumVal)
+    ) {
+      return false;
+    }
+    if (
+      move.endLetterVal === -1 ||
+      move.endNumVal === -1 ||
+      move.startLetterVal === -1 ||
+      move.startNumVal === -1
+    ) {
+      return false;
+    }
+
+    if (move.startpiece === "P") {
+      if (move.color === 0) {
+        if (this.board[move.startNumVal][move.startLetterVal] !== "lp") {
+          return false;
+        }
+      } else {
+        if (this.board[move.startNumVal][move.startLetterVal] !== "dp") {
+          return false;
         }
       }
     }
-  }
-}
-function kingMove(notation, color) {
-  const kings = ["lk", "dk"];
-  let letterVal = getLetterValue(notation[1]);
-  let numVal = getNumberValue(notation[2]);
-  if (notation[notation.length - 3] === "x") {
-    letterVal = getLetterValue(notation[notation.length - 2]);
-    numVal = getNumberValue(notation[notation.length - 1]);
-  }
-  for (let movement of kingEightMovements) {
-    const startNumber = numVal + movement[0];
-    const startLetter = letterVal + movement[1];
-    if (
-      startNumber < 0 ||
-      startNumber > 7 ||
-      startLetter < 0 ||
-      startLetter > 7
-    ) {
-      continue;
-    }
-    if (board[startNumber][startLetter] === kings[color]) {
-      didKingMove[color] = true;
-      board[startNumber][startLetter] = "";
-      board[numVal][letterVal] = kings[color];
-      break;
-    }
-  }
-}
-function pieceMove(notation, color, fourMovements, piece) {
-  let letterVal = getLetterValue(notation[1]);
-  let numVal = getNumberValue(notation[2]);
-  let letterFromWhere = -1;
-  if (notation[notation.length - 3] === "x") {
-    if (notation.length !== 5) {
-      letterFromWhere = -1;
-    } else {
-      letterFromWhere = getLetterValue(notation[1]);
-    }
-    letterVal = getLetterValue(notation[notation.length - 2]);
-    numVal = getNumberValue(notation[notation.length - 1]);
-  } else if (notation.length === 4) {
-    if (board[numVal][letterVal] !== "") {
-      return;
-    }
-    letterFromWhere = getLetterValue(notation[1]);
-    letterVal = getLetterValue(notation[2]);
-    numVal = getNumberValue(notation[3]);
-  } else if (board[numVal][letterVal] !== "") {
-    return;
-  }
-
-  for (let movement of fourMovements) {
-    let startNumVal = numVal;
-    let startLetterVal = letterVal;
-    while (true) {
-      startNumVal += movement[0];
-      startLetterVal += movement[1];
-
+    if (move.startpiece === "P" && move.cross === true) {
       if (
-        startNumVal > 7 ||
-        startLetterVal > 7 ||
-        startNumVal < 0 ||
-        startLetterVal < 0
+        Math.abs(move.startLetterVal - move.endLetterVal) === 1 &&
+        Math.abs(move.startNumVal - move.endNumVal) === 1
       ) {
-        break;
-      }
-      if (startLetterVal !== letterFromWhere && letterFromWhere !== -1) {
-        continue;
-      }
-      if (board[startNumVal][startLetterVal] === piece[color]) {
-        board[startNumVal][startLetterVal] = "";
-        board[numVal][letterVal] = piece[color];
-      }
-      if (board[startNumVal][startLetterVal] !== "") {
-        break;
+        return true;
+      } else {
+        return false;
       }
     }
-  }
-}
-function knightMove(notation, color) {
-  let letterVal = getLetterValue(notation[1]);
-  let numVal = getNumberValue(notation[2]);
-  let letterFromWhere = -1;
-  if (notation[notation.length - 3] === "x") {
-    if (notation.length !== 5) {
-      letterFromWhere = -1;
-    } else {
-      letterFromWhere = getLetterValue(notation[1]);
-    }
-    letterVal = getLetterValue(notation[notation.length - 2]);
-    numVal = getNumberValue(notation[notation.length - 1]);
-  } else if (notation.length === 4) {
-    letterFromWhere = getLetterValue(notation[1]);
-    letterVal = getLetterValue(notation[2]);
-    numVal = getNumberValue(notation[3]);
-  }
-  for (let movement of knightEightMovements) {
-    const startNumber = numVal + movement[0];
-    const startLetter = letterVal + movement[1];
     if (
-      startNumber < 0 ||
-      startNumber > 7 ||
-      startLetter < 0 ||
-      startLetter > 7
+      move.startpiece !== "P" &&
+      move.cross === false &&
+      this.board[move.endNumVal][move.endLetterVal] !== ""
     ) {
-      continue;
+      return false;
+    } else if (move.cross === true) {
+      if (
+        (this.board[move.endNumVal][move.endLetterVal] === "" &&
+          this.getColor(move) === move.color) ||
+        this.board[move.endNumVal][move.endLetterVal] === ""
+      ) {
+        return false;
+      }
     }
-    if (startLetter !== letterFromWhere && letterFromWhere !== -1) {
-      continue;
+    if (move.cross === true) {
+      if (move.startpiece === "B") {
+        if (!this.isPieceValidMove(move, bishopMove)) {
+          return false;
+        }
+      } else if (move.startpiece === "R") {
+        if (!this.isPieceValidMove(move, rookMove)) {
+          return false;
+        }
+      } else if (move.startpiece === "Q") {
+        if (!this.isPieceValidMove(move, queenMove)) {
+          return false;
+        }
+      } else if (move.startpiece === "N") {
+        if (!this.isKingKnightValidMove(move, knightMove)) {
+          return false;
+        }
+      } else if (move.startpiece === "K") {
+        if (!this.isKingKnightValidMove(move, kingMove)) {
+          return false;
+        }
+      }
     }
-    const knights = ["ln", "dn"];
-    if (board[startNumber][startLetter] === knights[color]) {
-      board[startNumber][startLetter] = "";
-      board[numVal][letterVal] = knights[color];
-      break;
-    }
-  }
-}
-function getNumberValue(numVal) {
-  return 8 - parseInt(numVal, 10);
-}
-function getLetterValue(letterVal) {
-  return letterVal.charCodeAt() - "a".charCodeAt();
-}
-function isDarkPiece(piece) {
-  if (piece !== "" && piece[0] === "d") {
     return true;
   }
-  return false;
-}
-function isLightPiece(piece) {
-  if (piece !== "" && piece[0] === "l") {
-    return true;
-  }
-  return false;
-}
-function findPawnPosition(targetNum, targetLetter, color) {
-  let currentNum = 0;
-  if (color === 0) {
-    if (targetNum === 4) {
-      if (board[targetNum + 1][targetLetter]) {
-        currentNum = 5;
-      } else {
-        currentNum = 6;
-      }
-    } else {
-      if (board[targetNum + 1][targetLetter]) {
-        currentNum = targetNum + 1;
-      }
-    }
-  } else {
-    if (targetNum === 3) {
-      if (board[targetNum - 1][targetLetter]) {
-        currentNum = 2;
-      } else {
-        currentNum = 1;
-      }
-    } else {
-      if (board[targetNum - 1][targetLetter]) {
-        currentNum = targetNum - 1;
-      }
-    }
-  }
-
-  return currentNum;
-}
-
-function pawnCrossMove(notation, color) {
-  const endLetterVal = getLetterValue(notation[2]);
-  const endNumberVal = getNumberValue(notation[3]);
-  const startLetterVal = getLetterValue(notation[0]);
-  const startNumberVal = color === 1 ? endNumberVal - 1 : endNumberVal + 1;
-  if (color === 0) {
+  isValidCastleMove(move) {
     if (
-      (startLetterVal - endLetterVal === 1 ||
-        startLetterVal - endLetterVal === -1) &&
-      (startNumberVal - endNumberVal === 1 ||
-        startNumberVal - endNumberVal === -1)
+      isNaN(move.endLetterVal) ||
+      isNaN(move.endNumVal) ||
+      isNaN(move.startLetterVal) ||
+      isNaN(move.startNumVal)
     ) {
-      if (
-        board[startNumberVal][startLetterVal] !== "" &&
-        isDarkPiece(board[endNumberVal][endLetterVal])
-      ) {
-        board[startNumberVal][startLetterVal] = "";
-        board[endNumberVal][endLetterVal] = "lp";
+      return false;
+    }
+    if (didKingMove[move.color]) {
+      return false;
+    }
+    let notation;
+    if (move.castle === 1) {
+      notation = "O-O";
+    } else if (move.castle === 2) {
+      notation = "O-O-O";
+    }
+    for (let castleMove of castleMovements) {
+      if (castleMove.notation === notation && castleMove.color === move.color) {
+        for (
+          let i = 0;
+          i <
+          Math.abs(
+            castleMove.kingStartPosition.letter -
+              castleMove.rookStartPosition.letter
+          );
+          i++
+        ) {
+          if (
+            this.board[castleMove.kingEndPosition.number][
+              castleMove.kingEndPosition.letter
+            ] === "" &&
+            this.board[castleMove.rookEndPosition.number][
+              castleMove.rookEndPosition.letter
+            ] === ""
+          ) {
+            return true;
+          }
+        }
       }
     }
-  } else {
-    if (
-      (startLetterVal - endLetterVal === 1 ||
-        startLetterVal - endLetterVal === -1) &&
-      (startNumberVal - endNumberVal === 1 ||
-        startNumberVal - endNumberVal === -1)
-    ) {
-      if (
-        board[startNumberVal][startLetterVal] !== "" &&
-        isLightPiece(board[endNumberVal][endLetterVal])
-      ) {
-        board[startNumberVal][startLetterVal] = "";
-        board[endNumberVal][endLetterVal] = "dp";
-      }
-    }
-  }
-}
-function isEligiblePawn(color, targetNumber, beforeNumber, letterVal) {
-  if (board[targetNumber][letterVal] !== "") {
     return false;
   }
-  if (color === 0) {
-    if (board[beforeNumber][letterVal] !== "lp") {
-      return false;
-    }
-  } else {
-    if (board[beforeNumber][letterVal] !== "dp") {
-      return false;
-    }
-  }
-  return true;
-}
-function pawnMove(notation, color) {
-  const letterVal = getLetterValue(notation[0]);
-  const numVal = getNumberValue(notation[1]);
-  const currentNum = findPawnPosition(numVal, letterVal, color);
-  if (!isEligiblePawn(color, numVal, currentNum, letterVal)) {
-    return;
-  }
-  if (color === 0) {
-    board[numVal][letterVal] = "lp";
-  } else {
-    board[numVal][letterVal] = "dp";
-  }
-  board[currentNum][letterVal] = "";
-}
+  isKingKnightValidMove(move, movements) {
+    for (let movement of movements) {
+      const startNumber = move.startNumVal + movement[0];
+      const startLetter = move.startLetterVal + movement[1];
 
-function Move(notation, color) {
-  if (notation.indexOf("x") !== -1) {
-    const first = notation[0];
-    if (first === "N") {
-      knightMove(notation, color);
-    } else if (first === "B") {
-      pieceMove(notation, color, bishopMove, ["lb", "db"]);
-    } else if (first === "R") {
-      pieceMove(notation, color, rookMove, ["lr", "dr"]);
-    } else if (first === "Q") {
-      pieceMove(notation, color, bishopMove, ["lq", "dq"]);
-      pieceMove(notation, color, rookMove, ["lq", "dq"]);
-    } else if (first === "K") {
-      kingMove(notation, color);
+      if (
+        startNumber < 0 ||
+        startNumber > 7 ||
+        startLetter < 0 ||
+        startLetter > 7
+      ) {
+        break;
+      }
+
+      if (this.board[startNumber][startLetter] === "") {
+        continue;
+      } else if (
+        startNumber === move.endNumVal &&
+        startLetter === move.endLetterVal
+      ) {
+        return true;
+      } else {
+        continue;
+      }
     }
+    return false;
+  }
+  isPieceValidMove(move, fourMovements) {
+    for (let movement of fourMovements) {
+      let startNumVal = move.startNumVal;
+      let startLetterVal = move.startLetterVal;
+      while (true) {
+        startNumVal += movement[0];
+        startLetterVal += movement[1];
+
+        if (
+          startNumVal < 0 ||
+          startNumVal > 7 ||
+          startLetterVal < 0 ||
+          startLetterVal > 7
+        ) {
+          break;
+        }
+        if (this.board[startNumVal][startLetterVal] === "") {
+          continue;
+        } else if (
+          startNumVal === move.endNumVal &&
+          startLetterVal === move.endLetterVal
+        ) {
+          return true;
+        } else {
+          break;
+        }
+      }
+    }
+    return false;
+  }
+
+  makeMove(move) {
+    if (!this.isValidMove(move)) {
+      return false;
+    }
+    if (move.castle !== 0) {
+      return this.MakeCastleMove(move);
+    }
+    const copyBoard = JSON.parse(JSON.stringify(this.board));
+    this.board[move.startNumVal][move.startLetterVal] = "";
+    this.board[move.endNumVal][move.endLetterVal] =
+      (move.color === constants.WHITE ? "l" : "d") +
+      move.startpiece.toLowerCase();
+    if (this.isCheck(move.color === 0 ? 1 : 0)) {
+      this.board.splice(0, this.board.length, ...copyBoard);
+      return false;
+    }
+    return true;
+  }
+  getNumberValue(numVal) {
+    const val = 8 - parseInt(numVal, 10);
+    if (typeof val === "undefined" || val < 0 || val > 7) {
+      return -1;
+    } else {
+      return val;
+    }
+  }
+  getLetterValue(letterVal) {
+    const value = letterVal.charCodeAt() - "a".charCodeAt();
+    if (value < 0 || value > 7) {
+      return -1;
+    } else {
+      return value;
+    }
+  }
+  findStartPosition(move, startString) {
+    switch (move.startpiece) {
+      case constants.PAWN:
+        this.findPawnStartPosition(move);
+        break;
+      case constants.KNIGHT:
+        this.findKnightKingStartPosition(move, startString, knightMove, [
+          "ln",
+          "dn",
+        ]);
+        break;
+      case constants.BISHOP:
+        this.findPieceStartPosition(move, startString, bishopMove, [
+          "lb",
+          "db",
+        ]);
+        break;
+      case constants.ROOK:
+        this.findPieceStartPosition(move, startString, rookMove, ["lr", "dr"]);
+        break;
+      case constants.QUEEN:
+        this.findPieceStartPosition(move, startString, queenMove, ["lq", "dq"]);
+        break;
+      case constants.KING:
+        this.findKnightKingStartPosition(move, startString, kingMove, [
+          "lk",
+          "dk",
+        ]);
+        break;
+      default:
+        this.MakeCastleMove(move);
+    }
+  }
+  findPawnStartPosition(move) {
     if (
-      "a".charCodeAt() <= first.charCodeAt() &&
-      first.charCodeAt() <= "h".charCodeAt()
+      isNaN(move.endLetterVal) ||
+      isNaN(move.endNumVal) ||
+      isNaN(move.startLetterVal) ||
+      isNaN(move.startNumVal)
     ) {
-      pawnCrossMove(notation, color);
+      return false;
     }
-  } else if (notation.length === 2) {
-    pawnMove(notation, color);
-  } else if (
-    notation[0] === "N" &&
-    (notation.length === 3 || notation.length === 4)
-  ) {
-    knightMove(notation, color);
-  } else if (notation[0] === "K") {
-    kingMove(notation, color);
-  } else {
-    if (notation[0] === "B") {
-      pieceMove(notation, color, bishopMove, ["lb", "db"]);
-    } else if (notation[0] === "R") {
-      pieceMove(notation, color, rookMove, ["lr", "dr"]);
-    } else if (notation[0] === "Q") {
-      pieceMove(notation, color, bishopMove, ["lq", "dq"]);
-      pieceMove(notation, color, rookMove, ["lq", "dq"]);
+    if (move.endLetterVal === -1 || move.endLetterVal === -1) {
+      return false;
     }
-    castleMove(notation, color);
+    let startNumber;
+    if (move.cross === true) {
+      this.findPawnCrossStartPosition(move);
+    } else {
+      startNumber = 0;
+      if (move.color === 0) {
+        if (move.endNumVal === 4) {
+          if (this.board[move.endNumVal + 1][move.endLetterVal]) {
+            startNumber = 5;
+          } else {
+            startNumber = 6;
+          }
+        } else {
+          if (this.board[move.endNumVal + 1][move.endLetterVal]) {
+            startNumber = move.endNumVal + 1;
+          }
+        }
+      } else {
+        if (move.endNumVal === 3) {
+          if (this.board[move.endNumVal - 1][move.endLetterVal]) {
+            startNumber = 2;
+          } else {
+            startNumber = 1;
+          }
+        } else {
+          if (this.board[move.endNumVal - 1][move.endLetterVal]) {
+            startNumber = move.endNumVal - 1;
+          }
+        }
+      }
+      move.startLetterVal = move.endLetterVal;
+      move.startNumVal = startNumber;
+      if (move.startLetterVal === -1 || move.startNumVal === -1) {
+        return false;
+      }
+    }
+  }
+  findPawnCrossStartPosition(move) {
+    move.startNumVal =
+      move.color === 0 ? move.endNumVal + 1 : move.endNumVal - 1;
+    if (move.startLetterVal === -1 || move.startNumVal === -1) {
+      return false;
+    }
+  }
+  findKnightKingStartPosition(move, startString, movements, piece) {
+    if (
+      isNaN(move.endLetterVal) ||
+      isNaN(move.endNumVal) ||
+      isNaN(move.startLetterVal) ||
+      isNaN(move.startNumVal)
+    ) {
+      return false;
+    }
+    if (move.endLetterVal === -1 || move.endLetterVal === -1) {
+      return false;
+    }
+    if (startString.length === 2) {
+      move.startLetterVal = this.getLetterValue(startString[0]);
+      move.startNumVal = this.getNumberValue(startString[1]);
+      return;
+    } else if (startString.length === 1) {
+      if (isNaN(parseInt(startString)))
+        move.startLetterVal = this.getLetterValue(startString);
+      else {
+        move.startNumVal = this.getNumberValue(startString);
+      }
+    }
+
+    for (let movement of movements) {
+      const startNumber = move.endNumVal + movement[0];
+      const startLetter = move.endLetterVal + movement[1];
+
+      if (
+        startNumber < 0 ||
+        startNumber > 7 ||
+        startLetter < 0 ||
+        startLetter > 7
+      ) {
+        continue;
+      }
+
+      if (
+        (startLetter !== move.startLetterVal && move.startLetterVal !== -1) ||
+        (startNumber !== move.startNumVal && move.startNumVal !== -1)
+      ) {
+        continue;
+      }
+
+      if (this.board[startNumber][startLetter] === piece[move.color]) {
+        if (move.startpiece === "K") {
+          didKingMove[move.color] = true;
+        }
+        move.startLetterVal = startLetter;
+        move.startNumVal = startNumber;
+        return true;
+      }
+    }
+    if (move.startLetterVal === -1 || move.startNumVal === -1) {
+      return false;
+    }
+  }
+  findPieceStartPosition(move, startString, fourMovements, piece) {
+    if (
+      isNaN(move.endLetterVal) ||
+      isNaN(move.endNumVal) ||
+      isNaN(move.startLetterVal) ||
+      isNaN(move.startNumVal)
+    ) {
+      return false;
+    }
+    if (move.endLetterVal === -1 || move.endLetterVal === -1) {
+      return false;
+    }
+    if (startString.length === 2) {
+      move.startLetterVal = this.getLetterValue(startString[0]);
+      move.startNumVal = this.getNumberValue(startString[1]);
+    } else if (startString.length === 1) {
+      if (parseInt(move.startString).isNan())
+        move.startLetterVal = this.getLetterValue(startString);
+      else {
+        move.startNumVal = this.getNumberValue(startString);
+      }
+    }
+
+    for (let movement of fourMovements) {
+      let startNumVal = move.endNumVal;
+      let startLetterVal = move.endLetterVal;
+      while (true) {
+        startNumVal += movement[0];
+        startLetterVal += movement[1];
+
+        if (
+          startNumVal < 0 ||
+          startNumVal > 7 ||
+          startLetterVal < 0 ||
+          startLetterVal > 7
+        ) {
+          break;
+        }
+        if (
+          startLetterVal === move.startLetterVal ||
+          startNumVal === move.startNumVal
+        ) {
+          continue;
+        }
+        if (this.board[startNumVal][startLetterVal] === piece[move.color]) {
+          move.startLetterVal = startLetterVal;
+          move.startNumVal = startNumVal;
+        }
+        if (this.board[startNumVal][startLetterVal] !== "") {
+          break;
+        }
+      }
+    }
+    if (move.startLetterVal === -1 || move.startNumVal === -1) {
+      return false;
+    }
+
+    return false;
+  }
+  MakeCastleMove(move) {
+    if (
+      isNaN(move.endLetterVal) ||
+      isNaN(move.endNumVal) ||
+      isNaN(move.startLetterVal) ||
+      isNaN(move.startNumVal)
+    ) {
+      return false;
+    }
+    if (didKingMove[move.color]) {
+      return false;
+    }
+    let notation;
+    if (move.castle === 1) {
+      notation = "O-O";
+    } else if (move.castle === 2) {
+      notation = "O-O-O";
+    }
+    for (let castleMove of castleMovements) {
+      if (castleMove.notation === notation && castleMove.color === move.color) {
+        if (move.color === 0) {
+          this.board[castleMove.kingEndPosition.number][
+            castleMove.kingEndPosition.letter
+          ] = "lk";
+          this.board[castleMove.rookEndPosition.number][
+            castleMove.rookEndPosition.letter
+          ] = "lr";
+        } else {
+          this.board[castleMove.kingEndPosition.number][
+            castleMove.kingEndPosition.letter
+          ] = "dk";
+          this.board[castleMove.rookEndPosition.number][
+            castleMove.rookEndPosition.letter
+          ] = "dr";
+        }
+        this.board[castleMove.kingStartPosition.number][
+          castleMove.kingStartPosition.letter
+        ] = "";
+        this.board[castleMove.rookStartPosition.number][
+          castleMove.rookStartPosition.letter
+        ] = "";
+      } else {
+        continue;
+      }
+    }
+    return true;
+  }
+  isCheck(color) {
+    let kingNumPosition;
+    let kingLetterPosition;
+    for (let i = 0; i < this.board.length; i++) {
+      for (let j = 0; j < this.board[i].length; j++) {
+        if (color === 0) {
+          if (this.board[i][j] === "dk") {
+            kingNumPosition = i;
+            kingLetterPosition = j;
+          }
+        } else if (color === 1) {
+          if (this.board[i][j] === "lk") {
+            kingNumPosition = i;
+            kingLetterPosition = j;
+          }
+        }
+      }
+    }
+    const colorCheck = ["l", "d"];
+    for (let k = 0; k < this.board.length; k++) {
+      for (let l = 0; l < this.board[k].length; l++) {
+        if (this.board[k][l][0] === colorCheck[color]) {
+          const tempMove = new ChessMove();
+          tempMove.startpiece = this.board[k][l][1].toUpperCase();
+          tempMove.startNumVal = k;
+          tempMove.startLetterVal = l;
+          tempMove.endNumVal = kingNumPosition;
+          tempMove.endLetterVal = kingLetterPosition;
+          tempMove.cross = true;
+          tempMove.endpiece = constants.KING;
+          tempMove.color = color;
+          if (this.isValidMove(tempMove)) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+  isCheckmate(move) {
+    if (
+      // this.isPawnCheckmate(
+      //   move,
+      //   move.color === 0 ? pawnBlackMove : pawnWhiteMove,
+      //   ["lp", "dp"]
+      // ) &&
+      // this.isPieceCheckmate(move, knightMove, ["ln", "dn"]) &&
+      // this.isPieceCheckmate(move, bishopMove, ["lb", "db"]) &&
+      // this.isPieceCheckmate(move, rookMove, ["lr", "dr"]) &&
+      // this.isPieceCheckmate(move, queenMove, ["lq", "dq"]) &&
+      this.isPieceCheckmate(move, kingMove, ["lk", "dk"])
+    ) {
+      return true;
+    }
+  }
+  isPawnCheckmate(move, movements, colors) {
+    let color;
+    if (move.color === 0) {
+      color = 1;
+    } else {
+      color = 0;
+    }
+    let numPosition;
+    let letterPosition;
+    for (let i = 0; i < this.board.length; i++) {
+      for (let j = 0; j < this.board[i].length; j++) {
+        if (this.board[i][j] === colors[color]) {
+          if (this.board[i][j][0] === colors[color].substring(0, 1)) {
+            numPosition = i;
+            letterPosition = j;
+            if (move.color === 0) {
+              for (let i = 1; i < 3; i++) {
+                const copyBoard = JSON.parse(JSON.stringify(this.board));
+                if (numPosition === 1) {
+                  this.board[numPosition][letterPosition] = "";
+                  if (numPosition + i < 0 || numPosition + i > 7) {
+                    this.board.splice(0, this.board.length, ...copyBoard);
+                    break;
+                  }
+                  this.board[numPosition + i][letterPosition] = colors[1];
+
+                  if (!this.isCheck(move.color)) {
+                    this.board.splice(0, this.board.length, ...copyBoard);
+                    return false;
+                  }
+                }
+                this.board.splice(0, this.board.length, ...copyBoard);
+              }
+
+              if (numPosition !== 1) {
+                const copyBoard = JSON.parse(JSON.stringify(this.board));
+
+                this.board[numPosition + 1][letterPosition] = colors[0];
+
+                if (!this.isCheck(move.color)) {
+                  this.board.splice(0, this.board.length, ...copyBoard);
+                  return false;
+                }
+                this.board.splice(0, this.board.length, ...copyBoard);
+              }
+            } else {
+              for (let i = 6; i < 8; i++) {
+                const copyBoard = JSON.parse(JSON.stringify(this.board));
+                if (numPosition === 6) {
+                  this.board[numPosition][letterPosition] = "";
+                  if (numPosition - i < 0 || numPosition - i > 7) {
+                    this.board.splice(0, this.board.length, ...copyBoard);
+                    break;
+                  }
+                  this.board[numPosition - i][letterPosition] = colors[0];
+
+                  if (!this.isCheck(move.color)) {
+                    this.board.splice(0, this.board.length, ...copyBoard);
+                    return false;
+                  }
+                }
+                this.board.splice(0, this.board.length, ...copyBoard);
+              }
+
+              if (numPosition !== 6) {
+                const copyBoard = JSON.parse(JSON.stringify(this.board));
+                this.board[numPosition][letterPosition] = "";
+
+                this.board[numPosition - 1][letterPosition] = colors[0];
+
+                if (!this.isCheck(move.color)) {
+                  this.board.splice(0, this.board.length, ...copyBoard);
+                  return false;
+                }
+                this.board.splice(0, this.board.length, ...copyBoard);
+              }
+            }
+          }
+        }
+      }
+    }
+    return true;
+  }
+  isPieceCheckmate(move, movements, colors) {
+    const copyBoard = JSON.parse(JSON.stringify(this.board));
+    let numPosition;
+    let letterPosition;
+    for (let i = 0; i < this.board.length; i++) {
+      for (let j = 0; j < this.board[i].length; j++) {
+        if (move.color === 0) {
+          if (this.board[i][j] === colors[1]) {
+            numPosition = i;
+            letterPosition = j;
+          }
+        } else if (move.color === 1) {
+          if (this.board[i][j] === colors[0]) {
+            numPosition = i;
+            letterPosition = j;
+          }
+        }
+      }
+    }
+    let np = numPosition;
+    let lp = letterPosition;
+    this.board[numPosition][letterPosition] = "";
+    for (let movement of movements) {
+      np += movement[0];
+      lp += movement[1];
+      if (np < 0 || np > 7 || lp < 0 || lp > 7 || this.board[np][lp] !== "") {
+        np = numPosition;
+        lp = letterPosition;
+        continue;
+      }
+      if (move.color === 0) {
+        this.board[np][lp] = colors[1];
+      } else {
+        this.board[np][lp] = colors[0];
+      }
+      if (this.isCheck(move.color)) {
+        this.board[np][lp] = "";
+        continue;
+      } else {
+        this.board.splice(0, this.board.length, ...copyBoard);
+        return false;
+      }
+    }
+    this.board.splice(0, this.board.length, ...copyBoard);
+    return true;
   }
 }
-
-function renderColumn(column, keyValue) {
-  const isEmpty = column !== "";
-  return (
-    <span key={keyValue}>
-      {isEmpty && (
-        <img
-          style={{ width: "12.5%" }}
-          alt={pieces[column]}
-          src={pieces[column]}
-        ></img>
-      )}
-      {!isEmpty && (
-        <span style={{ width: "12.5%", display: "inline-block" }}></span>
-      )}
-    </span>
-  );
-}
-
-function renderRow(row, rowIndex) {
-  let keyValue = (rowIndex + 1) * 8;
-  return (
-    <div key={rowIndex} style={{ height: "12.5%" }}>
-      {row.map((column) => {
-        return renderColumn(column, keyValue++);
-      })}
-    </div>
-  );
-}
-for (let move of moves) {
-  Move(move[0], 0);
-  Move(move[1], 1);
-}
-
-function Chessboard() {
-  return (
-    <Container>
-      <Row>
-        <Col md={2} className="my-4">
-          <div className="wrapper">
-            <Nav
-              defaultActiveKey="/home"
-              className="sidebar flex-column bg-light"
-            >
-              <Nav.Link className="l home" href="/home">
-                <p
-                  style={{
-                    textAlign: "center",
-                    color: "black",
-                    fontWeight: "bold",
-                    fontSize: 30,
-                  }}
-                >
-                  Home
-                </p>
-              </Nav.Link>
-              <Nav.Link className="l play" eventKey="link-1">
-                <p
-                  style={{
-                    textAlign: "center",
-                    color: "black",
-                    fontWeight: "bold",
-                    fontSize: 30,
-                  }}
-                >
-                  Play
-                </p>
-              </Nav.Link>
-              <Nav.Link className="l puzzles" eventKey="link-2">
-                <p
-                  style={{
-                    textAlign: "center",
-                    color: "black",
-                    fontWeight: "bold",
-                    fontSize: 30,
-                  }}
-                >
-                  Puzzles
-                </p>
-              </Nav.Link>
-              <Nav.Link className="l learn" eventKey="disabled">
-                <p
-                  style={{
-                    textAlign: "center",
-                    color: "black",
-                    fontWeight: "bold",
-                    fontSize: 30,
-                  }}
-                >
-                  Learn
-                </p>
-              </Nav.Link>
-            </Nav>
-          </div>
-        </Col>
-        <Col md={6}>
-          <div className="chessboard">
-            {board.map((row, index) => {
-              return renderRow(row, index);
-            })}
-          </div>
-        </Col>
-        <Col md={2} className="mx-4">
-          <Table striped bordered hover className="my-4">
-            <tbody>
-              {moves.map((move, index) => {
-                return (
-                  <tr key={index}>
-                    <td key={0} className="count">
-                      .
-                    </td>
-                    <td key={1}>{move[0]}</td>
-                    <td key={2}> {move[1]}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </Table>
-        </Col>
-      </Row>
-    </Container>
-  );
-}
-
-export default Chessboard;

@@ -1,0 +1,9 @@
+parseNotion
+    do all parsing including castle
+isValidMove
+    ...
+    if (move.castle !== 0)
+        isValidCastleMove
+makeMove
+    if (move.castle != 0)
+        makeCastleMove
