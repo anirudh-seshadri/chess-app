@@ -3,17 +3,18 @@ import board from "./board.json";
 import { makeAutoObservable } from "mobx";
 import Chessboard from "./chessboard";
 import Openings from "./openingtree";
-
 export default class ChessGame {
   constructor() {
-    makeAutoObservable(this);
-    this.moves = moves;
+    this.moves = [];
+    this.gameOver = false;
     this.board = board;
     this.openingName = "";
-    this.chessboard = new Chessboard(this.board);
     this.openings = new Openings();
     this.openings.createTree();
+    makeAutoObservable(this);
+    this.chessboard = new Chessboard(this.board);
   }
+
   addMove(notation) {
     if (this.moves.length === 0) {
       if (
@@ -32,9 +33,15 @@ export default class ChessGame {
         notation = notation.concat("+");
         if (this.chessboard.isCheckmate(move)) {
           notation = notation.replace("+", "#");
-          console.log("checkmate");
+          this.gameOver = true;
+        }
+      } else {
+        if (this.chessboard.isCheckmate(move)) {
+          notation = notation.concat("$");
+          this.gameOver = true;
         }
       }
+
       if (moveColor === 1) {
         finalMoveSet[1] = notation;
         this.moves.push(this.moves.pop());
@@ -43,6 +50,36 @@ export default class ChessGame {
       }
     }
     this.openingName = this.openings.findOpening(this.moves);
+    if (this.moves.length >= 6) {
+      if (
+        (this.moves[this.moves.length - 1][0] ===
+          this.moves[this.moves.length - 3][0] &&
+          this.moves[this.moves.length - 5][0] ===
+            this.moves[this.moves.length - 3][0] &&
+          this.moves[this.moves.length - 1][0] ===
+            this.moves[this.moves.length - 5][0]) ||
+        (this.moves[this.moves.length - 2][0] ===
+          this.moves[this.moves.length - 4][0] &&
+          this.moves[this.moves.length - 2][0] ===
+            this.moves[this.moves.length - 6][0] &&
+          this.moves[this.moves.length - 4][0] ===
+            this.moves[this.moves.length - 6][0]) ||
+        (this.moves[this.moves.length - 1][1] ===
+          this.moves[this.moves.length - 3][1] &&
+          this.moves[this.moves.length - 5][1] ===
+            this.moves[this.moves.length - 3][1] &&
+          this.moves[this.moves.length - 1][1] ===
+            this.moves[this.moves.length - 5][1]) ||
+        (this.moves[this.moves.length - 2][1] ===
+          this.moves[this.moves.length - 4][1] &&
+          this.moves[this.moves.length - 2][1] ===
+            this.moves[this.moves.length - 6][1] &&
+          this.moves[this.moves.length - 4][1] ===
+            this.moves[this.moves.length - 6][1])
+      ) {
+        this.gameOver = true;
+      }
+    }
     return;
   }
 
@@ -53,9 +90,13 @@ export default class ChessGame {
     return this.moves;
   }
   init() {
-    for (let move of this.moves) {
-      this.Move(move[0], 0);
-      this.Move(move[1], 1);
+    let initMoves = moves;
+    initMoves = [];
+    for (let move of initMoves) {
+      this.addMove(move[0]);
+      if (move[1] !== "") {
+        this.addMove(move[1]);
+      }
     }
   }
 }

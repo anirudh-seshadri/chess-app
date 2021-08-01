@@ -35,7 +35,6 @@ function renderRow(row, rowIndex) {
 
 const LocalChessboardView = observer(({ chessgame }) => {
   const [currentMove, setCurrentMove] = useState("");
-
   return (
     <Container>
       <Row>
@@ -123,16 +122,23 @@ const LocalChessboardView = observer(({ chessgame }) => {
         </Col>
         <Col md={2} className="my-4">
           <div>
-            <input
-              onChange={(event) => setCurrentMove(event.target.value)}
-              type="text"
-              placeholder="Enter your move..."
-              onKeyPress={(event) => {
-                if (event.key === "Enter") {
-                  chessgame.addMove(currentMove);
-                }
-              }}
-            />
+            {!chessgame.gameOver && (
+              <input
+                onChange={(event) => {
+                  setCurrentMove(event.target.value);
+                }}
+                type="text"
+                value={currentMove}
+                placeholder="Enter your move..."
+                onKeyPress={(event) => {
+                  setCurrentMove(event.target.value);
+                  if (event.key === "Enter") {
+                    chessgame.addMove(currentMove);
+                    setCurrentMove("");
+                  }
+                }}
+              />
+            )}
           </div>
         </Col>
       </Row>
@@ -145,4 +151,5 @@ chessgame.init();
 function ChessboardView() {
   return <LocalChessboardView chessgame={chessgame} />;
 }
+
 export default ChessboardView;

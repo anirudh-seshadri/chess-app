@@ -6,9 +6,7 @@ import bishopMove from "./bishopmovements.json";
 import rookMove from "./rookmovements.json";
 import queenMove from "./queenmovemements.json";
 import castleMovements from "./castlemovements.json";
-import pawnWhiteMove from "./pawnwhitemovements.json";
-import pawnBlackMove from "./pawnblackmovements.json";
-
+/* eslint-disable */
 let didKingMove = [false, false];
 export default class ChessBoard {
   constructor(board) {
@@ -66,6 +64,7 @@ export default class ChessBoard {
     }
     move.endLetterVal = this.getLetterValue(endString[0]);
     move.endNumVal = this.getNumberValue(endString[1]);
+    this.DoEnPassant(move);
     this.findStartPosition(move, startString);
     return move;
   }
@@ -98,6 +97,17 @@ export default class ChessBoard {
       return false;
     }
 
+    if (move.startpiece !== "P" && move.cross === true) {
+      if (move.color === 0) {
+        if (this.board[move.endNumVal][move.endLetterVal][0] === "l") {
+          return false;
+        }
+      } else {
+        if (this.board[move.endNumVal][move.endLetterVal][0] === "d") {
+          return false;
+        }
+      }
+    }
     if (move.startpiece === "P") {
       if (move.color === 0) {
         if (this.board[move.startNumVal][move.startLetterVal] !== "lp") {
@@ -112,7 +122,8 @@ export default class ChessBoard {
     if (move.startpiece === "P" && move.cross === true) {
       if (
         Math.abs(move.startLetterVal - move.endLetterVal) === 1 &&
-        Math.abs(move.startNumVal - move.endNumVal) === 1
+        Math.abs(move.startNumVal - move.endNumVal) === 1 &&
+        this.board[move.endNumVal][move.endLetterVal] !== ""
       ) {
         return true;
       } else {
@@ -214,7 +225,7 @@ export default class ChessBoard {
         startLetter < 0 ||
         startLetter > 7
       ) {
-        break;
+        continue;
       }
 
       if (this.board[startNumber][startLetter] === "") {
@@ -262,13 +273,17 @@ export default class ChessBoard {
   }
 
   makeMove(move) {
+    const copyBoard = JSON.parse(JSON.stringify(this.board));
     if (!this.isValidMove(move)) {
       return false;
     }
     if (move.castle !== 0) {
-      return this.MakeCastleMove(move);
+      if (this.isCheck(move.color === 0 ? 1 : 0)) {
+        return false;
+      } else {
+        return this.MakeCastleMove(move);
+      }
     }
-    const copyBoard = JSON.parse(JSON.stringify(this.board));
     this.board[move.startNumVal][move.startLetterVal] = "";
     this.board[move.endNumVal][move.endLetterVal] =
       (move.color === constants.WHITE ? "l" : "d") +
@@ -384,6 +399,40 @@ export default class ChessBoard {
       return false;
     }
   }
+  DoEnPassant(move) {
+    let enPassant = false;
+    if (enPassant) {
+      if (move.color === 0) {
+        if (
+          (move.startNumVal - 1 === move.endNumVal &&
+            move.startLetterVal - 1 === move.endLetterVal) ||
+          (move.startNumVal - 1 === move.endNumVal &&
+            move.startLetterVal + 1 === move.endLetterVal)
+        ) {
+          if (this.board[move.endNumVal][move.endLetterVal] === "") {
+            this.board[move.endNumVal][move.endLetterVal] = "lp";
+            this.board[np][lp] = "";
+          }
+        }
+      }
+    }
+    let np;
+    let lp;
+    if (move.color === 1) {
+      if (move.endNumVal === 3 && move.startNumVal === 1) {
+        if (
+          this.board[move.endNumVal][move.endLetterVal - 1] === "lp" ||
+          this.board[move.endNumVal][move.endLetterVal + 1] === "lp"
+        ) {
+          np = move.endNumVal;
+          lp = move.endLetterVal;
+          enPassant = true;
+          return;
+        }
+      }
+    }
+    return true;
+  }
   findKnightKingStartPosition(move, startString, movements, piece) {
     if (
       isNaN(move.endLetterVal) ||
@@ -456,10 +505,11 @@ export default class ChessBoard {
     if (startString.length === 2) {
       move.startLetterVal = this.getLetterValue(startString[0]);
       move.startNumVal = this.getNumberValue(startString[1]);
+      return true;
     } else if (startString.length === 1) {
-      if (parseInt(move.startString).isNan())
+      if (isNaN(startString)) {
         move.startLetterVal = this.getLetterValue(startString);
-      else {
+      } else {
         move.startNumVal = this.getNumberValue(startString);
       }
     }
@@ -480,14 +530,16 @@ export default class ChessBoard {
           break;
         }
         if (
-          startLetterVal === move.startLetterVal ||
-          startNumVal === move.startNumVal
+          (startLetterVal !== move.startLetterVal &&
+            move.startLetterVal !== -1) ||
+          (startNumVal !== move.startNumVal && move.startNumVal !== -1)
         ) {
           continue;
         }
         if (this.board[startNumVal][startLetterVal] === piece[move.color]) {
           move.startLetterVal = startLetterVal;
           move.startNumVal = startNumVal;
+          return true;
         }
         if (this.board[startNumVal][startLetterVal] !== "") {
           break;
@@ -497,10 +549,10 @@ export default class ChessBoard {
     if (move.startLetterVal === -1 || move.startNumVal === -1) {
       return false;
     }
-
-    return false;
+    return true;
   }
   MakeCastleMove(move) {
+    const copyBoard = JSON.parse(JSON.stringify(this.board));
     if (
       isNaN(move.endLetterVal) ||
       isNaN(move.endNumVal) ||
@@ -513,7 +565,12 @@ export default class ChessBoard {
       return false;
     }
     let notation;
-    if (move.castle === 1) {
+    if (this.isCheck(move.color === 0 ? 1 : 0)) {
+      move.castle = 0;
+    }
+    if (move.castle === 0) {
+      return false;
+    } else if (move.castle === 1) {
       notation = "O-O";
     } else if (move.castle === 2) {
       notation = "O-O-O";
@@ -544,6 +601,10 @@ export default class ChessBoard {
       } else {
         continue;
       }
+    }
+    if (this.isCheck(move.color === 0 ? 1 : 0)) {
+      this.board.splice(0, this.board.length, ...copyBoard);
+      return false;
     }
     return true;
   }
@@ -588,21 +649,17 @@ export default class ChessBoard {
   }
   isCheckmate(move) {
     if (
-      // this.isPawnCheckmate(
-      //   move,
-      //   move.color === 0 ? pawnBlackMove : pawnWhiteMove,
-      //   ["lp", "dp"]
-      // ) &&
-      // this.isPieceCheckmate(move, knightMove, ["ln", "dn"]) &&
-      // this.isPieceCheckmate(move, bishopMove, ["lb", "db"]) &&
-      // this.isPieceCheckmate(move, rookMove, ["lr", "dr"]) &&
-      // this.isPieceCheckmate(move, queenMove, ["lq", "dq"]) &&
+      this.isPawnCheckmate(move, ["lp", "dp"]) &&
+      this.isPieceCheckmate(move, knightMove, ["ln", "dn"]) &&
+      this.isPieceCheckmate(move, bishopMove, ["lb", "db"]) &&
+      this.isPieceCheckmate(move, rookMove, ["lr", "dr"]) &&
+      this.isPieceCheckmate(move, queenMove, ["lq", "dq"]) &&
       this.isPieceCheckmate(move, kingMove, ["lk", "dk"])
     ) {
       return true;
     }
   }
-  isPawnCheckmate(move, movements, colors) {
+  isPawnCheckmate(move, colors) {
     let color;
     if (move.color === 0) {
       color = 1;
@@ -620,14 +677,31 @@ export default class ChessBoard {
             if (move.color === 0) {
               for (let i = 1; i < 3; i++) {
                 const copyBoard = JSON.parse(JSON.stringify(this.board));
-                if (numPosition === 1) {
+                if (
+                  numPosition === 1 &&
+                  this.board[numPosition][letterPosition][0] === colors[1][0]
+                ) {
                   this.board[numPosition][letterPosition] = "";
                   if (numPosition + i < 0 || numPosition + i > 7) {
                     this.board.splice(0, this.board.length, ...copyBoard);
-                    break;
+                    continue;
                   }
-                  this.board[numPosition + i][letterPosition] = colors[1];
-
+                  if (this.board[numPosition + i][letterPosition] === "") {
+                    if (i === 2) {
+                      if (this.board[numPosition + 1][letterPosition] !== "") {
+                        this.board.splice(0, this.board.length, ...copyBoard);
+                        continue;
+                      }
+                    }
+                    this.board[numPosition + i][letterPosition] = colors[1];
+                    if (this.isCheck(move.color === 0 ? 1 : 0)) {
+                      this.board.splice(0, this.board.length, ...copyBoard);
+                      continue;
+                    }
+                  } else {
+                    this.board.splice(0, this.board.length, ...copyBoard);
+                    continue;
+                  }
                   if (!this.isCheck(move.color)) {
                     this.board.splice(0, this.board.length, ...copyBoard);
                     return false;
@@ -636,11 +710,21 @@ export default class ChessBoard {
                 this.board.splice(0, this.board.length, ...copyBoard);
               }
 
-              if (numPosition !== 1) {
+              if (
+                numPosition !== 1 &&
+                this.board[numPosition][letterPosition][0] === colors[1][0]
+              ) {
                 const copyBoard = JSON.parse(JSON.stringify(this.board));
-
-                this.board[numPosition + 1][letterPosition] = colors[0];
-
+                if (this.board[numPosition + 1][letterPosition] === "") {
+                  this.board[numPosition + 1][letterPosition] = colors[0];
+                  if (this.isCheck(move.color === 0 ? 1 : 0)) {
+                    this.board.splice(0, this.board.length, ...copyBoard);
+                    continue;
+                  }
+                } else {
+                  this.board.splice(0, this.board.length, ...copyBoard);
+                  continue;
+                }
                 if (!this.isCheck(move.color)) {
                   this.board.splice(0, this.board.length, ...copyBoard);
                   return false;
@@ -648,16 +732,32 @@ export default class ChessBoard {
                 this.board.splice(0, this.board.length, ...copyBoard);
               }
             } else {
-              for (let i = 6; i < 8; i++) {
+              for (let i = 1; i < 3; i++) {
                 const copyBoard = JSON.parse(JSON.stringify(this.board));
-                if (numPosition === 6) {
+                if (
+                  numPosition === 6 &&
+                  this.board[numPosition][letterPosition][0] === colors[0][0]
+                ) {
                   this.board[numPosition][letterPosition] = "";
                   if (numPosition - i < 0 || numPosition - i > 7) {
                     this.board.splice(0, this.board.length, ...copyBoard);
-                    break;
                   }
-                  this.board[numPosition - i][letterPosition] = colors[0];
-
+                  if (this.board[numPosition - i][letterPosition] === "") {
+                    if (i === 2) {
+                      if (this.board[numPosition - 1][letterPosition] !== "") {
+                        this.board.splice(0, this.board.length, ...copyBoard);
+                        continue;
+                      }
+                    }
+                    this.board[numPosition - i][letterPosition] = colors[1];
+                    if (this.isCheck(move.color === 0 ? 1 : 0)) {
+                      this.board.splice(0, this.board.length, ...copyBoard);
+                      continue;
+                    }
+                  } else {
+                    this.board.splice(0, this.board.length, ...copyBoard);
+                    continue;
+                  }
                   if (!this.isCheck(move.color)) {
                     this.board.splice(0, this.board.length, ...copyBoard);
                     return false;
@@ -666,11 +766,21 @@ export default class ChessBoard {
                 this.board.splice(0, this.board.length, ...copyBoard);
               }
 
-              if (numPosition !== 6) {
+              if (
+                numPosition !== 6 &&
+                this.board[numPosition][letterPosition][0] === colors[0][0]
+              ) {
                 const copyBoard = JSON.parse(JSON.stringify(this.board));
                 this.board[numPosition][letterPosition] = "";
-
-                this.board[numPosition - 1][letterPosition] = colors[0];
+                if (this.board[numPosition - 1][letterPosition] === "") {
+                  this.board[numPosition - 1][letterPosition] = colors[0];
+                  if (this.isCheck(move.color === 0 ? 1 : 0)) {
+                    this.board.splice(0, this.board.length, ...copyBoard);
+                    continue;
+                  }
+                } else {
+                  this.board.splice(0, this.board.length, ...copyBoard);
+                }
 
                 if (!this.isCheck(move.color)) {
                   this.board.splice(0, this.board.length, ...copyBoard);
@@ -704,16 +814,40 @@ export default class ChessBoard {
         }
       }
     }
-    let np = numPosition;
-    let lp = letterPosition;
     this.board[numPosition][letterPosition] = "";
     for (let movement of movements) {
-      np += movement[0];
-      lp += movement[1];
+      const np = numPosition + movement[0];
+      const lp = letterPosition + movement[1];
       if (np < 0 || np > 7 || lp < 0 || lp > 7 || this.board[np][lp] !== "") {
-        np = numPosition;
-        lp = letterPosition;
+        if (move.color === 0) {
+          if (np < 0 || np > 7 || lp < 0 || lp > 7) {
+            continue;
+          }
+          if (this.board[np][lp][0] === "l") {
+            this.board[np][lp] = colors[1];
+            this.board[numPosition][letterPosition] = "";
+            if (!this.isCheck(move.color)) {
+              this.board.splice(0, this.board.length, ...copyBoard);
+              return false;
+            }
+          }
+        } else {
+          if (np < 0 || np > 7 || lp < 0 || lp > 7) {
+            continue;
+          }
+          if (this.board[np][lp][0] === "d") {
+            this.board[numPosition][letterPosition] = "";
+            this.board[np][lp] = colors[0];
+            if (!this.isCheck(move.color)) {
+              this.board.splice(0, this.board.length, ...copyBoard);
+              return false;
+            }
+          }
+        }
         continue;
+      }
+      if (colors[0] === "lk") {
+        this.board[numPosition][letterPosition] = "";
       }
       if (move.color === 0) {
         this.board[np][lp] = colors[1];
@@ -722,8 +856,23 @@ export default class ChessBoard {
       }
       if (this.isCheck(move.color)) {
         this.board[np][lp] = "";
+        if (colors[0] === "lk") {
+          if (move.color === 0) {
+            this.board[numPosition][letterPosition] = colors[1];
+          } else {
+            this.board[numPosition][letterPosition] = colors[0];
+          }
+        }
         continue;
       } else {
+        this.board[np][lp] = "";
+        if (colors[0] === "lk") {
+          if (move.color === 0) {
+            this.board[numPosition][letterPosition] = colors[1];
+          } else {
+            this.board[numPosition][letterPosition] = colors[0];
+          }
+        }
         this.board.splice(0, this.board.length, ...copyBoard);
         return false;
       }
