@@ -6,12 +6,16 @@ import bishopMove from "./bishopmovements.json";
 import rookMove from "./rookmovements.json";
 import queenMove from "./queenmovemements.json";
 import castleMovements from "./castlemovements.json";
-/* eslint-disable */
 let didKingMove = [false, false];
 export default class ChessBoard {
   constructor(board) {
     this.board = board;
   }
+  /*The following function sets up the different 
+  parts of the constant move that are possible to
+   set up like what color and the end position of 
+   the move depending on the kind of move and 
+   using the notation that user inputs.*/
   parseNotation(notation, color) {
     const move = new ChessMove();
     move.color = color;
@@ -22,6 +26,11 @@ export default class ChessBoard {
         move.castle = 2;
       }
       return move;
+    }
+    if (notation[notation.length - 2] === "=") {
+      move.pawnPromotion[0] = true;
+      move.pawnPromotion[1] = notation[notation.length - 1];
+      notation = notation.substring(0, notation.length - 2);
     }
     let endString;
     let startString;
@@ -64,15 +73,21 @@ export default class ChessBoard {
     }
     move.endLetterVal = this.getLetterValue(endString[0]);
     move.endNumVal = this.getNumberValue(endString[1]);
-    this.DoEnPassant(move);
     this.findStartPosition(move, startString);
     return move;
   }
+  /*The following function gets what color the 
+  piece is at a certain square of the board. */
   getColor(move) {
     let endPiece = this.board[move.endNumVal][move.endLetterVal];
     return endPiece[0];
   }
-  isValidMove(move) {
+  /*The following function checks for the
+  validity if a certain move could be made
+  or not. If the move is invalid, it will 
+  return false to the makeMove() function. 
+ */
+  isValidMove(move, previousMove) {
     if (move.castle !== 0) {
       if (!this.isValidCastleMove(move)) {
         return false;
@@ -89,12 +104,27 @@ export default class ChessBoard {
       return false;
     }
     if (
-      move.endLetterVal === -1 ||
-      move.endNumVal === -1 ||
-      move.startLetterVal === -1 ||
-      move.startNumVal === -1
+      move.startLetterVal < 0 ||
+      move.startLetterVal > 7 ||
+      move.startNumVal < 0 ||
+      move.startNumVal > 7 ||
+      move.endLetterVal < 0 ||
+      move.endLetterVal > 7 ||
+      move.endNumVal < 0 ||
+      move.endNumVal > 7
     ) {
       return false;
+    }
+
+    if (previousMove === "" && move.cross === true) {
+      return false;
+    }
+    if (move.pawnPromotion[0] && move.pawnPromotion[1] !== "") {
+      if (!this.pawnPromotion(move)) {
+        return false;
+      } else {
+        return true;
+      }
     }
 
     if (move.startpiece !== "P" && move.cross === true) {
@@ -170,6 +200,10 @@ export default class ChessBoard {
     }
     return true;
   }
+  /*The following function checks for the validity
+  of castling. It will return true or false to
+  isValidMove() based on if the move is valid
+  or not. */
   isValidCastleMove(move) {
     if (
       isNaN(move.endLetterVal) ||
@@ -214,6 +248,10 @@ export default class ChessBoard {
     }
     return false;
   }
+  /*The following function checks for the validity
+  of a normal king or knight move. It will return 
+  true or false to isValidMove() based on if the 
+  move is valid or not. */
   isKingKnightValidMove(move, movements) {
     for (let movement of movements) {
       const startNumber = move.startNumVal + movement[0];
@@ -241,6 +279,10 @@ export default class ChessBoard {
     }
     return false;
   }
+  /*The following function checks for the validity
+  of bishop, rook, and queen moves. It will return 
+  true or false to isValidMove() based on if the 
+  move is valid or not. */
   isPieceValidMove(move, fourMovements) {
     for (let movement of fourMovements) {
       let startNumVal = move.startNumVal;
@@ -271,10 +313,19 @@ export default class ChessBoard {
     }
     return false;
   }
-
-  makeMove(move) {
+  /*The following function will make the move
+  on the board if isValidMove(), the rule of
+  enPassant and Promotion, and check and checkmate
+  are valid. It is called in chessgame.js. */
+  makeMove(move, previousMove) {
     const copyBoard = JSON.parse(JSON.stringify(this.board));
-    if (!this.isValidMove(move)) {
+    if (this.DoEnPassant(move, previousMove)) {
+      return true;
+    }
+    if (this.pawnPromotion(move)) {
+      return true;
+    }
+    if (!this.isValidMove(move, previousMove)) {
       return false;
     }
     if (move.castle !== 0) {
@@ -294,6 +345,9 @@ export default class ChessBoard {
     }
     return true;
   }
+  /*The following function will return the
+  number value of a piece on the board
+  using the number value of the notation.*/
   getNumberValue(numVal) {
     const val = 8 - parseInt(numVal, 10);
     if (typeof val === "undefined" || val < 0 || val > 7) {
@@ -302,6 +356,9 @@ export default class ChessBoard {
       return val;
     }
   }
+  /*The following function will return the
+  letter value of a piece on the board
+  using the letter value of the notation.*/
   getLetterValue(letterVal) {
     const value = letterVal.charCodeAt() - "a".charCodeAt();
     if (value < 0 || value > 7) {
@@ -310,6 +367,10 @@ export default class ChessBoard {
       return value;
     }
   }
+  /*The following function will call 
+  the function that finds the start
+  position for a certain piece by 
+  checking the startpiece of the move.*/
   findStartPosition(move, startString) {
     switch (move.startpiece) {
       case constants.PAWN:
@@ -343,6 +404,8 @@ export default class ChessBoard {
         this.MakeCastleMove(move);
     }
   }
+  /*The following function will find the
+  start position of a pawn. */
   findPawnStartPosition(move) {
     if (
       isNaN(move.endLetterVal) ||
@@ -352,7 +415,12 @@ export default class ChessBoard {
     ) {
       return false;
     }
-    if (move.endLetterVal === -1 || move.endLetterVal === -1) {
+    if (
+      move.endLetterVal < 0 ||
+      move.endNumVal < 0 ||
+      move.endLetterVal > 7 ||
+      move.endNumVal > 7
+    ) {
       return false;
     }
     let startNumber;
@@ -368,6 +436,9 @@ export default class ChessBoard {
             startNumber = 6;
           }
         } else {
+          if (move.endNumVal + 1 > 7 || move.endNumVal + 1 < 0) {
+            return false;
+          }
           if (this.board[move.endNumVal + 1][move.endLetterVal]) {
             startNumber = move.endNumVal + 1;
           }
@@ -380,6 +451,9 @@ export default class ChessBoard {
             startNumber = 1;
           }
         } else {
+          if (move.endNumVal - 1 > 7 || move.endNumVal - 1 < 0) {
+            return false;
+          }
           if (this.board[move.endNumVal - 1][move.endLetterVal]) {
             startNumber = move.endNumVal - 1;
           }
@@ -392,6 +466,9 @@ export default class ChessBoard {
       }
     }
   }
+  /*The following function will find the
+  start position of a pawn that takes 
+  another piece. */
   findPawnCrossStartPosition(move) {
     move.startNumVal =
       move.color === 0 ? move.endNumVal + 1 : move.endNumVal - 1;
@@ -399,9 +476,38 @@ export default class ChessBoard {
       return false;
     }
   }
-  DoEnPassant(move) {
-    let enPassant = false;
-    if (enPassant) {
+  /*The following function will do the
+  enPassant move if it's valid and return
+  true or false to makeMove() depending
+  whether the move is valid or not. */
+  DoEnPassant(move, previousMove) {
+    if (previousMove === "" && move.cross === true) {
+      return false;
+    }
+    if (move.cross === false) {
+      if (move.color === 0) {
+        if (move.startNumVal === 6 && move.endNumVal === 4) {
+          if (
+            this.board[move.startNumVal][move.endLetterVal + 1] === "dp" ||
+            this.board[move.startNumVal][move.endLetterVal - 1] === "dp"
+          ) {
+            previousMove.endNumVal = move.endNumVal;
+            previousMove.endLetterVal = move.endLetterVal;
+          }
+        }
+      } else {
+        if (move.startNumVal === 1 && move.endNumVal === 3) {
+          if (
+            this.board[move.startNumVal][move.endLetterVal - 1] === "lp" ||
+            this.board[move.startNumVal][move.endLetterVal + 1] === "lp"
+          ) {
+            previousMove.endNumVal = move.endNumVal;
+            previousMove.endLetterVal = move.endLetterVal;
+          }
+        }
+      }
+    }
+    if (move.cross === true) {
       if (move.color === 0) {
         if (
           (move.startNumVal - 1 === move.endNumVal &&
@@ -411,28 +517,31 @@ export default class ChessBoard {
         ) {
           if (this.board[move.endNumVal][move.endLetterVal] === "") {
             this.board[move.endNumVal][move.endLetterVal] = "lp";
-            this.board[np][lp] = "";
+            this.board[move.startNumVal][move.startLetterVal] = "";
+            this.board[previousMove.endNumVal][previousMove.endLetterVal] = "";
+            return true;
+          }
+        }
+      } else {
+        if (
+          (move.startNumVal + 1 === move.endNumVal &&
+            move.startLetterVal + 1 === move.endLetterVal) ||
+          (move.startNumVal + 1 === move.endNumVal &&
+            move.startLetterVal - 1 === move.endLetterVal)
+        ) {
+          if (this.board[move.endNumVal][move.endLetterVal] === "") {
+            this.board[move.endNumVal][move.endLetterVal] = "dp";
+            this.board[move.startNumVal][move.startLetterVal] = "";
+            this.board[previousMove.endNumVal][previousMove.endLetterVal] = "";
+            return true;
           }
         }
       }
     }
-    let np;
-    let lp;
-    if (move.color === 1) {
-      if (move.endNumVal === 3 && move.startNumVal === 1) {
-        if (
-          this.board[move.endNumVal][move.endLetterVal - 1] === "lp" ||
-          this.board[move.endNumVal][move.endLetterVal + 1] === "lp"
-        ) {
-          np = move.endNumVal;
-          lp = move.endLetterVal;
-          enPassant = true;
-          return;
-        }
-      }
-    }
-    return true;
+    return false;
   }
+  /*The following function will find the
+  start position of a king or knight. */
   findKnightKingStartPosition(move, startString, movements, piece) {
     if (
       isNaN(move.endLetterVal) ||
@@ -490,6 +599,8 @@ export default class ChessBoard {
       return false;
     }
   }
+  /*The following function will find the
+  start position of a bishop, rook, or queen. */
   findPieceStartPosition(move, startString, fourMovements, piece) {
     if (
       isNaN(move.endLetterVal) ||
@@ -551,6 +662,9 @@ export default class ChessBoard {
     }
     return true;
   }
+  /*The following function will make the
+  castle move after isValidCastleMove() is
+  checked.  */
   MakeCastleMove(move) {
     const copyBoard = JSON.parse(JSON.stringify(this.board));
     if (
@@ -608,6 +722,9 @@ export default class ChessBoard {
     }
     return true;
   }
+  /*The following function will check 
+  if the opposite color king is in check
+  using the current move color. */
   isCheck(color) {
     let kingNumPosition;
     let kingLetterPosition;
@@ -647,6 +764,11 @@ export default class ChessBoard {
     }
     return false;
   }
+  /*The following function will return
+  the outcome of whether the king is
+  in checkmate by calling the different
+  functions for isPawnCheckmate() and
+  isPieceCheckmate(). */
   isCheckmate(move) {
     if (
       this.isPawnCheckmate(move, ["lp", "dp"]) &&
@@ -659,6 +781,8 @@ export default class ChessBoard {
       return true;
     }
   }
+  /*The following function will check whether
+  the king is in checkmate by a pawn. */
   isPawnCheckmate(move, colors) {
     let color;
     if (move.color === 0) {
@@ -795,6 +919,12 @@ export default class ChessBoard {
     }
     return true;
   }
+  /*The following function will check
+  if the king is in checkmate by any
+  piece that is not a pawn and check
+  whether the king can itself move, 
+  which will result in the king not 
+  being in checkmate. */
   isPieceCheckmate(move, movements, colors) {
     const copyBoard = JSON.parse(JSON.stringify(this.board));
     let numPosition;
@@ -818,12 +948,17 @@ export default class ChessBoard {
     for (let movement of movements) {
       const np = numPosition + movement[0];
       const lp = letterPosition + movement[1];
-      if (np < 0 || np > 7 || lp < 0 || lp > 7 || this.board[np][lp] !== "") {
+      if (np < 0 || np > 7 || lp < 0 || lp > 7) {
+        continue;
+      }
+      if (
+        this.board[np][lp] === "" ||
+        (move.color === 0
+          ? this.board[np][lp][0] === "l"
+          : this.board[np][lp][0] === "d")
+      ) {
         if (move.color === 0) {
-          if (np < 0 || np > 7 || lp < 0 || lp > 7) {
-            continue;
-          }
-          if (this.board[np][lp][0] === "l") {
+          if (this.board[np][lp][0] === "l" || this.board[np][lp] === "") {
             this.board[np][lp] = colors[1];
             this.board[numPosition][letterPosition] = "";
             if (!this.isCheck(move.color)) {
@@ -832,52 +967,74 @@ export default class ChessBoard {
             }
           }
         } else {
-          if (np < 0 || np > 7 || lp < 0 || lp > 7) {
-            continue;
-          }
-          if (this.board[np][lp][0] === "d") {
-            this.board[numPosition][letterPosition] = "";
+          if (this.board[np][lp][0] === "d" || this.board[np][lp] === "") {
             this.board[np][lp] = colors[0];
+            this.board[numPosition][letterPosition] = "";
             if (!this.isCheck(move.color)) {
               this.board.splice(0, this.board.length, ...copyBoard);
               return false;
             }
           }
         }
-        continue;
-      }
-      if (colors[0] === "lk") {
-        this.board[numPosition][letterPosition] = "";
-      }
-      if (move.color === 0) {
-        this.board[np][lp] = colors[1];
-      } else {
-        this.board[np][lp] = colors[0];
-      }
-      if (this.isCheck(move.color)) {
-        this.board[np][lp] = "";
-        if (colors[0] === "lk") {
-          if (move.color === 0) {
-            this.board[numPosition][letterPosition] = colors[1];
-          } else {
-            this.board[numPosition][letterPosition] = colors[0];
-          }
-        }
-        continue;
-      } else {
-        this.board[np][lp] = "";
-        if (colors[0] === "lk") {
-          if (move.color === 0) {
-            this.board[numPosition][letterPosition] = colors[1];
-          } else {
-            this.board[numPosition][letterPosition] = colors[0];
-          }
-        }
         this.board.splice(0, this.board.length, ...copyBoard);
-        return false;
+        continue;
       }
     }
     this.board.splice(0, this.board.length, ...copyBoard);
     return true;
+  }
+  /*The following function will check for
+  and do pawnPromotion() if all rules
+  are valid for the move. */
+  pawnPromotion(move) {
+    if (
+      isNaN(move.endLetterVal) ||
+      isNaN(move.endNumVal) ||
+      isNaN(move.startLetterVal) ||
+      isNaN(move.startNumVal)
+    ) {
+      return false;
+    }
+    if (
+      move.startLetterVal < 0 ||
+      move.startLetterVal > 7 ||
+      move.startNumVal < 0 ||
+      move.startNumVal > 7 ||
+      move.endLetterVal < 0 ||
+      move.endLetterVal > 7 ||
+      move.endNumVal < 0 ||
+      move.endNumVal > 7
+    ) {
+      return false;
+    }
+    if (move.startpiece === "P") {
+      if (move.color === 0) {
+        if (
+          this.board[move.endNumVal][move.endLetterVal] === "" ||
+          (this.board[move.endNumVal][move.endLetterVal][0] === "d" &&
+            this.board[move.endNumVal][move.endLetterVal] !== "dk")
+        ) {
+          if (move.endNumVal === 0) {
+            this.board[move.endNumVal][move.endLetterVal] =
+              "l" + move.pawnPromotion[1].toLowerCase();
+            this.board[move.startNumVal][move.startLetterVal] = "";
+            return true;
+          }
+        }
+      } else {
+        if (
+          this.board[move.endNumVal][move.endLetterVal] === "" ||
+          (this.board[move.endNumVal][move.endLetterVal][0] === "l" &&
+            this.board[move.endNumVal][move.endLetterVal] !== "lk")
+        ) {
+          if (move.endNumVal === 7) {
+            this.board[move.endNumVal][move.endLetterVal] =
+              "d" + move.pawnPromotion[1].toLowerCase();
+            this.board[move.startNumVal][move.startLetterVal] = "";
+            return true;
+          }
+        }
+      }
+    }
   }
 }

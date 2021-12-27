@@ -1,105 +1,109 @@
-[
-  {
-    "move": "e4",
-    "name": "King's Pawn",
-    "children": [
-      {
-        "move": "c5",
-        "name": "Sicilian Defence",
-        "children": [
-          {
-            "move": "Nc3",
-            "name": "Closed Sicilian"
-          },
-          {
-            "move": "Nf3",
-            "children": [
-              {
-                "move": "d6",
-                "children": [
-                  {
-                    "move": "d4",
-                    "children": [
-                      {
-                        "move": "cxd4",
-                        "children": [
-                          {
-                            "move": "Nxd4",
-                            "children": [
-                              {
-                                "move": "Nf6",
-                                "children": [
-                                  {
-                                    "move": "Nc3",
-                                    "children": [
-                                      {
-                                        "move": "a6",
-                                        "name": "Najdorf"
-                                      },
-                                      {
-                                        "move": "g6",
-                                        "name": "Dragon"
-                                      },
-                                      {
-                                        "move": "Nc6",
-                                        "name": "Classical"
-                                      },
-                                      {
-                                        "move": "e6",
-                                        "name": "Scheveningen"
-                                      }
-                                    ]
-                                  }
-                                ]
-                              }
-                            ]
-                          }
-                        ]
-                      }
-                    ]
-                  }
-                ]
-              },
-              {
-                "move": "Nc6",
-                "children": [
-                  {
-                    "move": "d4",
-                    "children": [
-                      {
-                        "move": "cxd4",
-                        "children": [
-                          {
-                            "move": "g6",
-                            "name": "Accelerated Dragon"
-                          },
-                          {
-                            "move": "Nxd4",
-                            "children": [
-                              {
-                                "move": "e6",
-                                "name": "Taimanov"
-                              }
-                            ]
-                          }
-                        ]
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      },
-      {
-        "move": "e5",
-        "name": "King's Pawn Game"
-      }
-    ]
-  },
-  {
-    "move": "d4",
-    "name": "Queen's Pawn"
-  }
-]
+{
+  "move": "",
+  "name": "_root",
+  "children": [
+    {
+      "move": "e4",
+      "name": "King's Pawn",
+      "children": [
+        {
+          "move": "c5",
+          "name": "Sicilian Defence",
+          "children": [
+            {
+              "move": "Nc3",
+              "name": "Closed Sicilian"
+            },
+            {
+              "move": "Nf3",
+              "children": [
+                {
+                  "move": "d6",
+                  "children": [
+                    {
+                      "move": "d4",
+                      "children": [
+                        {
+                          "move": "cxd4",
+                          "children": [
+                            {
+                              "move": "Nxd4",
+                              "children": [
+                                {
+                                  "move": "Nf6",
+                                  "children": [
+                                    {
+                                      "move": "Nc3",
+                                      "children": [
+                                        {
+                                          "move": "a6",
+                                          "name": "Najdorf"
+                                        },
+                                        {
+                                          "move": "g6",
+                                          "name": "Dragon"
+                                        },
+                                        {
+                                          "move": "Nc6",
+                                          "name": "Classical"
+                                        },
+                                        {
+                                          "move": "e6",
+                                          "name": "Scheveningen"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "move": "Nc6",
+                  "children": [
+                    {
+                      "move": "d4",
+                      "children": [
+                        {
+                          "move": "cxd4",
+                          "children": [
+                            {
+                              "move": "g6",
+                              "name": "Accelerated Dragon"
+                            },
+                            {
+                              "move": "Nxd4",
+                              "children": [
+                                {
+                                  "move": "e6",
+                                  "name": "Taimanov"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "move": "e5",
+          "name": "King's Pawn Game"
+        }
+      ]
+    },
+    {
+      "move": "d4",
+      "name": "Queen's Pawn"
+    }
+  ]
+}

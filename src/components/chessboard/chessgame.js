@@ -13,22 +13,26 @@ export default class ChessGame {
     this.openings.createTree();
     makeAutoObservable(this);
     this.chessboard = new Chessboard(this.board);
+    this.previousMove = "";
   }
-
   addMove(notation) {
     if (this.moves.length === 0) {
       if (
-        this.chessboard.makeMove(this.chessboard.parseNotation(notation, 0))
+        this.chessboard.makeMove(
+          this.chessboard.parseNotation(notation, 0),
+          this.previousMove
+        )
       ) {
         this.moves = this.moves.concat([[notation, ""]]);
+        this.previousMove = this.chessboard.parseNotation(notation, 0);
       }
-      this.openingName = this.openings.findOpening(this.moves);
+      this.openingName = this.openings.getOpeningName(this.moves);
       return;
     }
     let finalMoveSet = this.moves[this.moves.length - 1];
     const moveColor = finalMoveSet[1] === "" ? 1 : 0;
     const move = this.chessboard.parseNotation(notation, moveColor);
-    if (this.chessboard.makeMove(move)) {
+    if (this.chessboard.makeMove(move, this.previousMove)) {
       if (this.chessboard.isCheck(move.color)) {
         notation = notation.concat("+");
         if (this.chessboard.isCheckmate(move)) {
@@ -45,11 +49,13 @@ export default class ChessGame {
       if (moveColor === 1) {
         finalMoveSet[1] = notation;
         this.moves.push(this.moves.pop());
+        this.previousMove = this.chessboard.parseNotation(notation, 1);
       } else {
         this.moves = this.moves.concat([[notation, ""]]);
+        this.previousMove = this.chessboard.parseNotation(notation, 1);
       }
     }
-    this.openingName = this.openings.findOpening(this.moves);
+    this.openingName = this.openings.getOpeningName(this.moves);
     if (this.moves.length >= 6) {
       if (
         (this.moves[this.moves.length - 1][0] ===
@@ -91,7 +97,7 @@ export default class ChessGame {
   }
   init() {
     let initMoves = moves;
-    initMoves = [];
+    // initMoves = [];
     for (let move of initMoves) {
       this.addMove(move[0]);
       if (move[1] !== "") {

@@ -1,34 +1,49 @@
 import OpeningsData from "./openings.json";
 export default class Openings {
   constructor() {
-    this.resultTree = [];
+    this.resultTree = { move: "", name: "_root", children: [] };
   }
+
   createTree() {
-    let resultTree = [];
     for (let inputOpening of OpeningsData) {
       const moves = this.movesParse(inputOpening.moves);
-      let filter = [];
-      for (let resultTreeElement of resultTree) {
-        if (resultTreeElement.move === moves[0]) {
-          filter.push(resultTreeElement);
+      let opening = this.findOpening(moves, 0, this.resultTree);
+      for (const move of moves) {
+        let openingName = "";
+        if (moves[moves.length - 1] === move) {
+          openingName = inputOpening.name;
         }
-      }
-      if (filter.length === 0) {
-        let resultMove = {
-          move: moves[0],
-        };
-        if (moves.length === 1) {
-          resultMove.name = inputOpening.name;
-        }
-        resultTree.push(resultMove);
-      } else {
-        let resultMove = filter[0];
-        if (moves.length === 1) {
-          resultMove.name = inputOpening.name;
-        }
+        opening = this.addMove(move, openingName, opening);
       }
     }
-    this.resultTree = resultTree;
+  }
+  findOpening(newMovesArr, moveLocation, openings) {
+    for (let i = 0; i < openings.length; i++) {
+      if (newMovesArr[moveLocation] === openings.children[i].move) {
+        if (
+          openings.children[i].children &&
+          openings.children[i].children.length !== 0
+        ) {
+          return this.findOpening(
+            newMovesArr,
+            moveLocation + 1,
+            openings.children[i]
+          );
+        }
+        return openings.children[i];
+      }
+    }
+    return openings;
+  }
+  getOpeningName(moves) {
+    let newMovesArr = [];
+    for (let i = 0; i < moves.length; i++) {
+      for (let j = 0; j < moves[i].length; j++) {
+        newMovesArr.push(moves[i][j]);
+      }
+    }
+    const opening = this.findOpening(newMovesArr, 0, this.resultTree);
+    return opening.name;
   }
   movesParse(moves) {
     moves = moves.replace(/[0-9]\./g, "");
@@ -40,34 +55,9 @@ export default class Openings {
     }
     return moves;
   }
-  findOpening(moves) {
-    let newMovesArr = [];
-    for (let i = 0; i < moves.length; i++) {
-      for (let j = 0; j < moves[i].length; j++) {
-        newMovesArr.push(moves[i][j]);
-      }
-    }
-    return this._findOpening(newMovesArr, 0, this.resultTree);
-  }
-  _findOpening(newMovesArr, moveLocation, openings) {
-    for (let i = 0; i < openings.length; i++) {
-      if (newMovesArr[moveLocation] === openings[i].move) {
-        if (
-          newMovesArr[moveLocation + 1] === "" ||
-          newMovesArr.length === moveLocation + 1
-        ) {
-          return openings[i].name;
-        } else {
-          if (openings[i].children && openings[i].children.length !== 0) {
-            return this._findOpening(
-              newMovesArr,
-              moveLocation + 1,
-              openings[i].children
-            );
-          }
-        }
-      }
-    }
-    return "";
+  addMove(move, name, opening) {
+    const moveObject = { move, name, children: [] };
+    opening.children.push(moveObject);
+    return moveObject;
   }
 }

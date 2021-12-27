@@ -7,7 +7,7 @@ import { observer } from "mobx-react-lite";
 function renderColumn(column, keyValue) {
   const isEmpty = column !== "";
   return (
-    <span key={keyValue}>
+    <span data-testid={column} key={keyValue}>
       {isEmpty && (
         <img
           style={{ width: "12.5%" }}

@@ -10,5 +10,6 @@ export default class ChessMove {
     this.endpiece = "";
     this.color = constants.WHITE;
     this.castle = 0;
+    this.pawnPromotion = [false, ""];
   }
 }
